@@ -1,6 +1,7 @@
 package Agents;
 
-import sun.management.Agent;
+
+import jade.core.Agent;
 
 public class AgenteInterface extends Agent {
 }
