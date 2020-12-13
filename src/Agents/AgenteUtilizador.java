@@ -22,19 +22,11 @@ public class AgenteUtilizador extends Agent {
     private Posicao dest;
     private AID monitor;
 
-
-    public AgenteUtilizador(){
-        PrimitiveIterator.OfInt rd = new Random().ints(0,100).iterator();
-        int x = rd.nextInt();
-       int y=  rd.nextInt();
-       //debug only
-       posAtual = new Posicao(0,0);
-        int xx = rd.nextInt();
-        int yy=  rd.nextInt();
-        //debug
-        dest = new Posicao(100,100);
-    }
     public void setup(){
+
+        Object[] args = getArguments();
+        posAtual=(Posicao) args[0];
+        dest = (Posicao) args[1];
         DFAgentDescription dfd= new DFAgentDescription();
         ServiceDescription sd = new ServiceDescription();
         sd.setType("monitor");

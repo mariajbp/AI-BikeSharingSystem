@@ -63,7 +63,6 @@ public class AgenteMonitor extends Agent {
                 try {
                    p=(Posicao) msg.getContentObject();
                 }catch (Exception e){e.printStackTrace();}
-                System.out.println("AgenteMonitor p:"+p);
                 if(userHistory.containsKey(userId)){
 
                     for(Map.Entry<AID,APE> e : estacoes.entrySet() ){

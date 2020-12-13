@@ -32,7 +32,6 @@ public class Posicao implements Serializable {
     public Posicao nextStep(Posicao to){
         float vx = to.posX-posX;
         float vy = to.posY-posY;
-        System.out.println("[Posicao-NextStep: From:"+this+"\nTo :"+to+"]\n");
         return  new Posicao(posX + (vx>0? 1 :(vx<0? -1 : 0)),posY + (vy>0? 1 : (vy<0? -1 : 0)));
     }
 }

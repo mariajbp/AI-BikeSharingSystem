@@ -2,6 +2,8 @@ package Agents;
 
 import java.util.*;
 
+import org.apache.commons.codec.binary.Base64;
+
 import Util.APE;
 import Util.Posicao;
 import jade.core.AID;
@@ -23,14 +25,10 @@ public class AgenteEstacao extends Agent {
     int capAtual;
     int capLim;
     boolean isFull;
-    Set<AID> users = new TreeSet<>();
+    volatile Set<AID> users = new TreeSet<>();
 
     public AgenteEstacao(APE ap, Posicao pos, int maxCap){
-        this.pos=pos;
-        ape = ap;
-        capLim=maxCap;
-        capAtual=0;
-        isFull=false;
+
     }
     public AgenteEstacao(){
         PrimitiveIterator.OfInt rd = new Random().ints(0,100).iterator();
@@ -52,6 +50,12 @@ public class AgenteEstacao extends Agent {
     }
 
     public void setup(){
+        Object[] args = getArguments();
+        this.pos=(Posicao) args[1];
+        ape =(APE) args[0];
+        capLim=(int) args[2];
+        capAtual=0;
+        isFull=false;
 
         DFAgentDescription dfd = new DFAgentDescription();
         dfd.setName(getAID());
@@ -85,7 +89,13 @@ public class AgenteEstacao extends Agent {
                     }
                     case ACLMessage.INFORM:{
                         try {
-                            users.add((AID) msg.getContentObject());
+                           AID userSignal = (AID) msg.getContentObject();
+                           if(users.contains(userSignal)){
+                               users.remove(userSignal);
+                           }
+                           else {
+                               users.add(userSignal);
+                           }
                         } catch (UnreadableException e) {
                             e.printStackTrace();
                         }

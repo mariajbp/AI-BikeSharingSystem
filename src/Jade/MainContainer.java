@@ -5,17 +5,22 @@ import Util.Posicao;
 import jade.core.Profile;
 import jade.core.ProfileImpl;
 import jade.core.Runtime;
+import jade.tools.sniffer.Agent;
 import jade.wrapper.AgentController;
 import jade.wrapper.ContainerController;
 import jade.wrapper.StaleProxyException;
 
 import java.io.ObjectInputStream;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
+import java.util.stream.IntStream;
 
 public class MainContainer {
 
     Runtime rt;
     ContainerController container;
+    int MAPSIZE=1000;
 
     public ContainerController initContainerInPlatform(String host, String port, String containerName) {
         // Get the JADE runtime interface (singleton)
@@ -72,20 +77,44 @@ public class MainContainer {
 
             Object[] args_input = new Object[] { "Container1" };
 
-            ContainerController newcontainer0 = a.initContainerInPlatform("localhost", "9886", "Container0");
             ContainerController newcontainer1 = a.initContainerInPlatform("localhost", "9887",
                     args_input[0].toString());
-            Posicao ps =  new Posicao(10,10);
-            Object[] argsinput= new Object[]{
-                    new APE(100,ps), ps, 200
-            };
-            AgentController sta1 = newcontainer1.createNewAgent("Sta1", "Agents.AgenteEstacao", argsinput);
+            List<AgentController> all= new ArrayList<>();
+            for(int i=0;i<10;i++){
+                Random r =new Random();
+                Posicao ps =  new Posicao(r.nextInt( a.MAPSIZE),r.nextInt( a.MAPSIZE));
+                Object[] staArgs= new Object[]{
+                            new APE(r.nextInt( 100),ps), ps, 200
+                    };
 
-            AgentController user1 = newcontainer1.createNewAgent("User1", "Agents.AgenteUtilizador", new Object[] {});
+                all.add(
+                             newcontainer1.createNewAgent("Sta"+i, "Agents.AgenteEstacao", staArgs)
+                     );}
+            for(AgentController ac : all) ac.start();
+
             AgentController mon1 = newcontainer1.createNewAgent("Mon1", "Agents.AgenteMonitor", new Object[] {});
             AgentController inter1 = newcontainer1.createNewAgent("Inter1", "Agents.AgenteInterface", new Object[] {});
-            sta1.start();
+
             mon1.start();
+
+            try {
+                Thread.sleep(300);
+            } catch (InterruptedException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+
+            all= new ArrayList<>();
+            for(int i=0;i<10;i++){
+                Random r =new Random();
+
+                all.add(
+
+                        newcontainer1.createNewAgent("User"+i, "Agents.AgenteUtilizador", new Object[]{
+                                new Posicao(r.nextInt(a.MAPSIZE),r.nextInt(a.MAPSIZE)),
+                                new Posicao(r.nextInt(a.MAPSIZE),r.nextInt(a.MAPSIZE)) })
+                );}
+            for(AgentController ac : all) ac.start();
 
 
             try {
@@ -95,7 +124,6 @@ public class MainContainer {
                 e.printStackTrace();
             }
 
-            user1.start();
             inter1.start();
 
 
