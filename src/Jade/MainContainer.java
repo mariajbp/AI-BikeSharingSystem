@@ -75,8 +75,11 @@ public class MainContainer {
             ContainerController newcontainer0 = a.initContainerInPlatform("localhost", "9886", "Container0");
             ContainerController newcontainer1 = a.initContainerInPlatform("localhost", "9887",
                     args_input[0].toString());
-
-            AgentController sta1 = newcontainer1.createNewAgent("Sta1", "Agents.AgenteEstacao", new Object[] {});
+            Posicao ps =  new Posicao(10,10);
+            Object[] argsinput= new Object[]{
+                    new APE(100,ps), ps, 200
+            };
+            AgentController sta1 = newcontainer1.createNewAgent("Sta1", "Agents.AgenteEstacao", argsinput);
 
             AgentController user1 = newcontainer1.createNewAgent("User1", "Agents.AgenteUtilizador", new Object[] {});
             AgentController mon1 = newcontainer1.createNewAgent("Mon1", "Agents.AgenteMonitor", new Object[] {});

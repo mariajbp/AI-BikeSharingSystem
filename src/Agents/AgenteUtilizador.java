@@ -22,6 +22,7 @@ public class AgenteUtilizador extends Agent {
     private Posicao dest;
     private AID monitor;
 
+
     public AgenteUtilizador(){
         PrimitiveIterator.OfInt rd = new Random().ints(0,100).iterator();
         int x = rd.nextInt();
