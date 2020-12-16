@@ -25,7 +25,7 @@ public class AgenteEstacao extends Agent {
     int capAtual;
     int capLim;
     boolean isFull;
-    volatile Set<AID> users = new TreeSet<>();
+    volatile Map<AID,Boolean> users = new HashMap<>();
 
     public AgenteEstacao(APE ap, Posicao pos, int maxCap){
 
@@ -43,7 +43,7 @@ public class AgenteEstacao extends Agent {
     }
 
     public void userEnter(AID aid){
-        users.add(aid);
+        users.put(aid,false);
     }
     public void userExit(AID aid) {
         users.remove(aid);
@@ -88,17 +88,22 @@ public class AgenteEstacao extends Agent {
                         break;
                     }
                     case ACLMessage.INFORM:{
+                        Object[] msgCont = new Object[0];
                         try {
-                           AID userSignal = (AID) msg.getContentObject();
-                           if(users.contains(userSignal)){
-                               users.remove(userSignal);
-                           }
-                           else {
-                               users.add(userSignal);
-                           }
-                        } catch (UnreadableException e) {
-                            e.printStackTrace();
+                            msgCont = (Object[]) msg.getContentObject();
+                        } catch (UnreadableException e) {e.printStackTrace();}
+                        String subject = (String) msgCont[0];
+                        switch (subject){
+                            case "SignalInOutAPE":
+                                AID userSignal =(AID) msgCont[1];
+                                if(users.containsKey(userSignal)){
+                                    users.remove(userSignal);
+                                }else {users.put(userSignal,false);}
+                                break;
+                            case "clientMg":
+                                break;
                         }
+
 
                     }
 

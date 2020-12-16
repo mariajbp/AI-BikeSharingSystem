@@ -17,7 +17,6 @@ import java.util.Map;
 public class AgenteMonitor extends Agent {
     Map<AID, APE> estacoes = new HashMap<>();
     Map<AID,Posicao> userHistory = new HashMap<>();
-
     public void setup(){
         DFAgentDescription dfd = new DFAgentDescription();
         dfd.setName(getAID());
@@ -69,7 +68,8 @@ public class AgenteMonitor extends Agent {
                         if(e.getValue().isInside(p)!=e.getValue().isInside(userHistory.get(userId))) {
                             ACLMessage retmsg = new ACLMessage(ACLMessage.INFORM);
                             try{
-                                retmsg.setContentObject(userId);
+                                Object[] sendCont = new Object[]{"SignalInOutAPE",userId};
+                                retmsg.setContentObject(sendCont);
                                 retmsg.addReceiver(e.getKey());
                             }catch (Exception ee){ee.printStackTrace();}
                             send(retmsg);

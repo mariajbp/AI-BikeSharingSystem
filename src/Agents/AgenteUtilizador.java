@@ -5,6 +5,7 @@ import Util.Posicao;
 import jade.core.AID;
 import jade.core.Agent;
 import jade.core.AgentDescriptor;
+import jade.core.behaviours.CyclicBehaviour;
 import jade.core.behaviours.TickerBehaviour;
 import jade.domain.DFService;
 import jade.domain.FIPAAgentManagement.DFAgentDescription;
@@ -21,9 +22,12 @@ public class AgenteUtilizador extends Agent {
     private Posicao posAtual;
     private Posicao dest;
     private AID monitor;
+    //Test
+    private String printId="User";
+    private boolean stay=false;
 
     public void setup(){
-
+        printId+=getAID().getLocalName() + ": ";
         Object[] args = getArguments();
         posAtual=(Posicao) args[0];
         dest = (Posicao) args[1];
@@ -49,7 +53,9 @@ public class AgenteUtilizador extends Agent {
 
         @Override
         protected void onTick() {
-            posAtual = posAtual.nextStep(dest);
+            Posicao pa = posAtual;
+            if(!stay&&(posAtual = posAtual.nextStep(dest)).equals(pa)){
+                System.out.println(printId+"FinalDest");stay=true;}
             ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
             msg.addReceiver(monitor);
             try {
@@ -60,4 +66,31 @@ public class AgenteUtilizador extends Agent {
             send(msg);
         }
     }
+
+
+
+    public class UserReciever extends CyclicBehaviour {
+        public UserReciever(Agent a) {
+            super(a);
+        }
+
+        @Override
+        public void action() {
+            ACLMessage msg = receive();
+            if(msg!=null){
+                switch (msg.getPerformative()){
+                    case ACLMessage.INFORM:
+                        Object[] cnt=(Object[]) msg.getContentObject();
+                        switch ((String)cnt[0]){
+                            case s
+                        }
+                        break;
+
+                }
+            }
+        }
+
+
+    }
+
 }
