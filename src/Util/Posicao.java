@@ -5,8 +5,8 @@ import java.util.Objects;
 
 public class Posicao implements Serializable {
 
-    float posX;
-    float posY;
+   public float posX;
+   public float posY;
 
    public Posicao(float x, float y){
         posX = x;
@@ -26,9 +26,9 @@ public class Posicao implements Serializable {
                 '}';
     }
 
-    public int euclideanDistance(Posicao p2){
+    public double euclideanDistance(Posicao p2){
         double dist = Math.sqrt(((Math.pow((posX - p2.posX), 2)) + (Math.pow((posY - p2.posY ), 2))));
-        return (int) dist ;
+        return  dist ;
     }
 
     public boolean equals(Posicao o) {
@@ -41,17 +41,13 @@ public class Posicao implements Serializable {
 
     public Posicao nextStep(Posicao to){
        if(this.equals(to)) {return to;}
+       double dist = euclideanDistance(to);
+        if (Math.abs(dist)<1) return to;
+       double vx = (to.posX-posX)/dist;
+       double vy = (to.posY-posY)/dist;
 
-        float vx = to.posX-posX;
-        float vy = to.posY-posY;
-        return  new Posicao(posX + (vx>0? 1 :(vx<0? -1 : 0)),posY + (vy>0? 1 : (vy<0? -1 : 0)));
+       return  new Posicao((float) vx+posX,(float) vy+posY);
     }
 
-    public boolean is34ths(Posicao to){
-        if(this.equals(to)) {return true;}
 
-        float vx = to.posX-posX;
-        float vy = to.posY-posY;
-        return  (vx!=0& vy!=0);
-    }
 }

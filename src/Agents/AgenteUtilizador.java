@@ -1,36 +1,42 @@
 package Agents;
 
 
+import Util.Personalidade;
 import Util.Posicao;
 import jade.core.AID;
 import jade.core.Agent;
 import jade.core.AgentDescriptor;
+import jade.core.behaviours.Behaviour;
 import jade.core.behaviours.CyclicBehaviour;
+import jade.core.behaviours.OneShotBehaviour;
 import jade.core.behaviours.TickerBehaviour;
 import jade.domain.DFService;
 import jade.domain.FIPAAgentManagement.DFAgentDescription;
 import jade.domain.FIPAAgentManagement.ServiceDescription;
 import jade.domain.FIPAException;
 import jade.lang.acl.ACLMessage;
+import jade.lang.acl.UnreadableException;
 
 import java.io.IOException;
-import java.util.PrimitiveIterator;
-import java.util.Random;
-import java.util.stream.IntStream;
 
 public class AgenteUtilizador extends Agent {
     private Posicao posAtual;
     private Posicao dest;
+    private double dist2dest;
     private AID monitor;
-    //Test
-    private String printId="User";
+    final Personalidade persona= new Personalidade();
+    private AID deliveryStation ;
     private boolean stay=false;
 
     public void setup(){
-        printId+=getAID().getLocalName() + ": ";
+
+
         Object[] args = getArguments();
         posAtual=(Posicao) args[0];
         dest = (Posicao) args[1];
+
+        dist2dest = dest.euclideanDistance(posAtual);
+
         DFAgentDescription dfd= new DFAgentDescription();
         ServiceDescription sd = new ServiceDescription();
         sd.setType("monitor");
@@ -54,9 +60,18 @@ public class AgenteUtilizador extends Agent {
         @Override
         protected void onTick() {
             Posicao pa = posAtual;
+            System.out.println(getAID().getLocalName()+" : "+posAtual);
             if(!stay&&(posAtual = posAtual.nextStep(dest)).equals(pa)){
-                System.out.println(printId+"FinalDest");stay=true;}
-            ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
+                System.out.println(getAID().getLocalName()+": FinalDest");
+                stay=true;
+                addBehaviour(new OneShotDeliver());
+            }
+            ACLMessage msg;
+            if(posAtual.euclideanDistance(dest)<(dist2dest*1/4))
+                msg = new ACLMessage(ACLMessage.CFP);
+            else
+                msg= new ACLMessage(ACLMessage.INFORM);
+
             msg.addReceiver(monitor);
             try {
                 msg.setContentObject(posAtual);
@@ -80,11 +95,35 @@ public class AgenteUtilizador extends Agent {
             if(msg!=null){
                 switch (msg.getPerformative()){
                     case ACLMessage.INFORM:
-                        Object[] cnt=(Object[]) msg.getContentObject();
+                        Object[] cnt= new Object[0];
+                        try {
+                            cnt = (Object[]) msg.getContentObject();
+                        } catch (UnreadableException e) {e.printStackTrace();}
+
                         switch ((String)cnt[0]){
-                            case s
+                            case "i":
+                                break;
                         }
                         break;
+                    case ACLMessage.PROPOSE:{
+                        System.out.println(getAID().getLocalName()+" : PROPOSAL REC");
+                        Object[] cont= new Object[0];
+                        try {
+                            cont = (Object[]) msg.getContentObject();
+                        } catch (UnreadableException e) {e.printStackTrace();}
+                        AID st = msg.getSender();
+                        msg =msg.createReply();
+                        if(persona.ponder(posAtual.euclideanDistance((Posicao) cont[1]),(int) cont[2])){
+                            msg.setPerformative(ACLMessage.ACCEPT_PROPOSAL);
+                            deliveryStation= st;
+                            dest=(Posicao) cont[1];
+                        }
+                        else
+                            msg.setPerformative(ACLMessage.REJECT_PROPOSAL);
+                        send(msg);
+
+                        break;
+                    }
 
                 }
             }
@@ -93,4 +132,23 @@ public class AgenteUtilizador extends Agent {
 
     }
 
+
+    private class OneShotDeliver extends OneShotBehaviour {
+        @Override
+        public void action() {
+            ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
+            msg.addReceiver(deliveryStation);
+            Object[] cnt = new Object[]{"depositBike"};
+
+            try {
+                msg.setContentObject(cnt);
+            } catch (IOException e) {e.printStackTrace();}
+
+            send(msg);
+
+            takeDown();
+
+
+        }
+    }
 }

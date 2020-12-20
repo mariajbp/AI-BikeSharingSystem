@@ -20,7 +20,7 @@ public class MainContainer {
 
     Runtime rt;
     ContainerController container;
-    int MAPSIZE=1000;
+    int MAPSIZE=200;
 
     public ContainerController initContainerInPlatform(String host, String port, String containerName) {
         // Get the JADE runtime interface (singleton)
@@ -80,17 +80,25 @@ public class MainContainer {
             ContainerController newcontainer1 = a.initContainerInPlatform("localhost", "9887",
                     args_input[0].toString());
             List<AgentController> all= new ArrayList<>();
-            for(int i=0;i<10;i++){
+            for(int i=0;i<3;i++){
                 Random r =new Random();
                 Posicao ps =  new Posicao(r.nextInt( a.MAPSIZE),r.nextInt( a.MAPSIZE));
                 Object[] staArgs= new Object[]{
-                            new APE(r.nextInt( 100),ps), ps, 200
+                            new APE(ps), ps, 3
                     };
 
                 all.add(
                              newcontainer1.createNewAgent("Sta"+i, "Agents.AgenteEstacao", staArgs)
                      );}
             for(AgentController ac : all) ac.start();
+
+
+            try {
+                Thread.sleep(300);
+            } catch (InterruptedException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
 
             AgentController mon1 = newcontainer1.createNewAgent("Mon1", "Agents.AgenteMonitor", new Object[] {});
             AgentController inter1 = newcontainer1.createNewAgent("Inter1", "Agents.AgenteInterface", new Object[] {});
@@ -105,7 +113,7 @@ public class MainContainer {
             }
 
             all= new ArrayList<>();
-            for(int i=0;i<10;i++){
+            for(int i=0;i<1;i++){
                 Random r =new Random();
 
                 all.add(

@@ -13,8 +13,8 @@ public class APE implements Serializable {
     Posicao pos;
 
 
-    public APE(int rad, Posicao pos) {
-        this.raio=20;
+    public APE( Posicao pos) {
+        this.raio=100;
         this.pos=pos;
     }
 
@@ -32,6 +32,7 @@ public class APE implements Serializable {
     }
 
     public boolean isInside(Posicao p){
+
         return (pos.euclideanDistance(p)<raio);
     }
 

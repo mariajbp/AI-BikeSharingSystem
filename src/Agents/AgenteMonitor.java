@@ -10,13 +10,16 @@ import jade.domain.FIPAAgentManagement.DFAgentDescription;
 import jade.domain.FIPAAgentManagement.ServiceDescription;
 import jade.domain.FIPAException;
 import jade.lang.acl.ACLMessage;
+import jade.lang.acl.MessageTemplate;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
 public class AgenteMonitor extends Agent {
     Map<AID, APE> estacoes = new HashMap<>();
     Map<AID,Posicao> userHistory = new HashMap<>();
+    Map<AID,Boolean> userCalling = new HashMap<>();
     public void setup(){
         DFAgentDescription dfd = new DFAgentDescription();
         dfd.setName(getAID());
@@ -34,6 +37,7 @@ public class AgenteMonitor extends Agent {
         s.setType("station");
         df.addServices(s);
         try{
+            DFAgentDescription[] sts = DFService.search(this, df);
             for (DFAgentDescription d : DFService.search(this, df)){
                 ACLMessage getAPE = new ACLMessage(ACLMessage.SUBSCRIBE);
                 getAPE.addReceiver(d.getName());
@@ -42,7 +46,7 @@ public class AgenteMonitor extends Agent {
                 while((rec = receive())==null){
                 }
                 if (rec.getPerformative()==ACLMessage.INFORM)
-                 estacoes.put(d.getName(),(APE)rec.getContentObject());
+                 estacoes.put(d.getName(),(APE) rec.getContentObject());
             }
         }catch (Exception e){e.printStackTrace();}
 
@@ -59,37 +63,63 @@ public class AgenteMonitor extends Agent {
             if(msg!=null){
                 Posicao p = new Posicao(0,0);
                 AID userId = msg.getSender();
-                try {
-                   p=(Posicao) msg.getContentObject();
-                }catch (Exception e){e.printStackTrace();}
-                if(userHistory.containsKey(userId)){
+                switch (msg.getPerformative()){
+                    case ACLMessage.CFP:
+                    case ACLMessage.INFORM:
+                        try {
+                            p=(Posicao) msg.getContentObject();
+                        }catch (Exception e){e.printStackTrace();}
 
-                    for(Map.Entry<AID,APE> e : estacoes.entrySet() ){
-                        if(e.getValue().isInside(p)!=e.getValue().isInside(userHistory.get(userId))) {
-                            ACLMessage retmsg = new ACLMessage(ACLMessage.INFORM);
-                            try{
-                                Object[] sendCont = new Object[]{"SignalInOutAPE",userId};
-                                retmsg.setContentObject(sendCont);
-                                retmsg.addReceiver(e.getKey());
-                            }catch (Exception ee){ee.printStackTrace();}
-                            send(retmsg);
+                        Posicao last= userHistory.getOrDefault(userId, p);
+                        boolean isOld = userHistory.containsKey(userId);
+                        boolean isCalling =msg.getPerformative()==ACLMessage.CFP;
+                        boolean didCall = userCalling.getOrDefault(userId,false);
+                        boolean sendSignal;
+
+
+
+                        String s = isCalling? "callingForProposal": "SignalInOutAPE";
+
+
+                        for(Map.Entry<AID,APE> e : estacoes.entrySet() ){
+                            boolean isIn = e.getValue().isInside(p);
+                            boolean wasIn =e.getValue().isInside(last);
+                            if(isOld){
+                                sendSignal = (isIn != wasIn) || ( isIn && !didCall && isCalling);
+                            }else {
+                                sendSignal = isIn;
+                            }
+
+
+
+                            if(sendSignal) {
+
+                                ACLMessage retmsg = new ACLMessage(ACLMessage.INFORM);
+                                try{
+                                    Object[] sendCont = new Object[]{s,userId};
+                                    retmsg.setContentObject(sendCont);
+                                    retmsg.addReceiver(e.getKey());
+                                }catch (Exception ee){ee.printStackTrace();}
+                                send(retmsg);
+                            }
                         }
-                    }
-                    userHistory.replace(userId,p);
+                        if(isOld){
+                            userHistory.replace(userId,p);
+                            userCalling.replace(userId,isCalling);
+                        }
+                        else {
+                            userHistory.put(userId, p);
+                            userCalling.put(userId,isCalling);
+                        }
+                        break;
+
+
+
+
+
+
                 }
-                else {
-                    for(Map.Entry<AID,APE> e : estacoes.entrySet() ){
-                    if(e.getValue().isInside(p)) {
-                        ACLMessage retmsg = new ACLMessage(ACLMessage.INFORM);
-                        try{
-                            retmsg.setContentObject(userId);
-                            retmsg.addReceiver(e.getKey());
-                        }catch (Exception ee){ee.printStackTrace();}
-                        send(retmsg);
-                        }
-                    }
-                    userHistory.put(userId,p);
-                    }
+
 
             }
 
