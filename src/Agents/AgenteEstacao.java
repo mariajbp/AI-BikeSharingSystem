@@ -33,27 +33,7 @@ public class AgenteEstacao extends Agent {
     volatile Map<AID,Boolean> users = new HashMap<>();
     Set<AID> usersComing = new HashSet<>();
 
-    public AgenteEstacao(APE ap, Posicao pos, int maxCap){
 
-    }
-    public AgenteEstacao(){
-        PrimitiveIterator.OfInt rd = new Random().ints(0,100).iterator();
-        this.pos=new Posicao(rd.nextInt(),rd.nextInt());
-        //DEBUG ONLY
-        this.pos=new Posicao(50,50);
-
-        ape = new APE(pos);
-        capLim=100;
-        capAtual=0;
-        isFull=false;
-    }
-
-    public void userEnter(AID aid){
-        users.put(aid,false);
-    }
-    public void userExit(AID aid) {
-        users.remove(aid);
-    }
 
     public void setup(){
         Object[] args = getArguments();
@@ -64,6 +44,7 @@ public class AgenteEstacao extends Agent {
         isFull=false;
 
 
+        System.out.println(getAID().getLocalName()+": "+ pos);
         DFAgentDescription dfd = new DFAgentDescription();
         dfd.setName(getAID());
         ServiceDescription sd = new ServiceDescription();
@@ -113,14 +94,20 @@ public class AgenteEstacao extends Agent {
                         switch (subject){
                             case "SignalInOutAPE":
                                 AID userSignal =(AID) msgCont[1];
+                                System.out.println(getAID().getLocalName()+": "+ getAID().getHap()+" InOut");
                                 if(users.containsKey(userSignal)){
                                     users.remove(userSignal);
                                 }else {users.put(userSignal,false);}
                                 break;
                             case "callingForProposal":
                                 AID user =(AID) msgCont[1];
+                                System.out.println(getAID().getLocalName()+": "+ getAID().getHap()+" InOutCALLING");
+
                                 if(users.containsKey(user)){
-                                    users.remove(user);
+                                    if(users.get(user))
+                                        users.remove(user);
+                                    else
+                                        users.replace(user,true);
                                 }else {users.put(user,true);}
                                 break;
                             case "depositBike":
@@ -175,7 +162,8 @@ public class AgenteEstacao extends Agent {
 
                 }
             });
-            send(msg);
+            if(msg.getAllReceiver().hasNext())
+                send(msg);
         }
 
     }

@@ -34,7 +34,7 @@ public class AgenteUtilizador extends Agent {
         Object[] args = getArguments();
         posAtual=(Posicao) args[0];
         dest = (Posicao) args[1];
-
+        System.out.println(getAID().getLocalName()+"From:"+posAtual+": Goal:"+ dest+persona);
         dist2dest = dest.euclideanDistance(posAtual);
 
         DFAgentDescription dfd= new DFAgentDescription();
@@ -49,6 +49,7 @@ public class AgenteUtilizador extends Agent {
 
 
         addBehaviour(new UserTicker(this,1000));
+        addBehaviour(new UserReciever(this));
     }
 
 
@@ -60,7 +61,7 @@ public class AgenteUtilizador extends Agent {
         @Override
         protected void onTick() {
             Posicao pa = posAtual;
-            System.out.println(getAID().getLocalName()+" : "+posAtual);
+            //System.out.println(getAID().getLocalName()+" : "+posAtual);
             if(!stay&&(posAtual = posAtual.nextStep(dest)).equals(pa)){
                 System.out.println(getAID().getLocalName()+": FinalDest");
                 stay=true;
@@ -143,10 +144,11 @@ public class AgenteUtilizador extends Agent {
             try {
                 msg.setContentObject(cnt);
             } catch (IOException e) {e.printStackTrace();}
+            if(msg.getAllReceiver().hasNext())
+                send(msg);
+            System.out.println(getAID().getLocalName()+": RIP");
 
-            send(msg);
-
-            takeDown();
+            doDelete();
 
 
         }
