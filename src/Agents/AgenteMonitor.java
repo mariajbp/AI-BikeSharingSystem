@@ -11,6 +11,7 @@ import jade.domain.FIPAAgentManagement.ServiceDescription;
 import jade.domain.FIPAException;
 import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
+import jade.lang.acl.UnreadableException;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -18,7 +19,7 @@ import java.util.Map;
 
 public class AgenteMonitor extends Agent {
     Map<AID, APE> estacoes = new HashMap<>();
-    Map<AID,Posicao> userHistory = new HashMap<>();
+    HashMap<AID,Posicao> userHistory = new HashMap<>();
     Map<AID,Boolean> userCalling = new HashMap<>();
     public void setup(){
         DFAgentDescription dfd = new DFAgentDescription();
@@ -76,24 +77,17 @@ public class AgenteMonitor extends Agent {
                         boolean didCall = userCalling.getOrDefault(userId,false);
                         boolean sendSignal;
 
-
-
                         String s = isCalling? "callingForProposal": "SignalInOutAPE";
-
 
                         for(Map.Entry<AID,APE> e : estacoes.entrySet() ){
                             boolean isIn = e.getValue().isInside(p);
                             boolean wasIn =e.getValue().isInside(last);
                             if(isOld){
                                 sendSignal = (isIn != wasIn) || ( isIn && !didCall && isCalling);
-                            }else {
-                                sendSignal = isIn;
-                            }
-
+                            }else {sendSignal = isIn;}
 
 
                             if(sendSignal) {
-
                                 ACLMessage retmsg = new ACLMessage(ACLMessage.INFORM);
                                 try{
                                     Object[] sendCont = new Object[]{s,userId};
@@ -112,6 +106,34 @@ public class AgenteMonitor extends Agent {
                             userCalling.put(userId,isCalling);
                         }
                         break;
+                        case ACLMessage.REQUEST:{
+                            String ss="";
+
+                            try {
+                                ss =(String) (((Object[]) msg.getContentObject())[0]);
+                            } catch (UnreadableException e) {e.printStackTrace();}
+
+                            msg =msg.createReply();
+                            msg.setPerformative(ACLMessage.INFORM);
+
+                            if(ss.equals("Stations")){
+
+                                HashMap<AID,Posicao> sendThis= new HashMap<>();
+                                estacoes.forEach((aid,ape) -> {
+                                    sendThis.put(aid,ape.getPosicao());
+                                });
+
+                               try {
+                                   msg.setContentObject(sendThis);
+                               }catch (Exception e){e.printStackTrace();}
+                            }else {
+                                try {
+                                    msg.setContentObject(userHistory);
+                                }catch (Exception e){e.printStackTrace();}
+                            }
+                            send(msg);
+                            break;
+                        }
 
                 }
 

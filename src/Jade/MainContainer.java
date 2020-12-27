@@ -1,6 +1,7 @@
 package Jade;
 
 import Util.APE;
+import Util.ConfigVars;
 import Util.Posicao;
 import jade.core.Profile;
 import jade.core.ProfileImpl;
@@ -20,7 +21,7 @@ public class MainContainer {
 
     Runtime rt;
     ContainerController container;
-    int MAPSIZE=200;
+    public int MAPSIZE=200;
 
     public ContainerController initContainerInPlatform(String host, String port, String containerName) {
         // Get the JADE runtime interface (singleton)
@@ -76,11 +77,10 @@ public class MainContainer {
             // Main container
 
             Object[] args_input = new Object[] { "Container1" };
-
             ContainerController newcontainer1 = a.initContainerInPlatform("localhost", "9887",
                     args_input[0].toString());
             List<AgentController> all= new ArrayList<>();
-            for(int i=0;i<3;i++){
+            for(int i = 0; i< ConfigVars.STATION_NUM; i++){
                 Random r =new Random();
                 Posicao ps =  new Posicao(r.nextInt( a.MAPSIZE),r.nextInt( a.MAPSIZE));
                 Object[] staArgs= new Object[]{
@@ -113,11 +113,9 @@ public class MainContainer {
             }
 
             all= new ArrayList<>();
-            for(int i=0;i<10;i++){
+            for(int i=0;i<ConfigVars.MAX_USERS;i++){
                 Random r =new Random();
-
                 all.add(
-
                         newcontainer1.createNewAgent("User"+i, "Agents.AgenteUtilizador", new Object[]{
                                 new Posicao(r.nextInt(a.MAPSIZE),r.nextInt(a.MAPSIZE)),
                                 new Posicao(r.nextInt(a.MAPSIZE),r.nextInt(a.MAPSIZE)) })
@@ -126,7 +124,7 @@ public class MainContainer {
 
 
             try {
-                Thread.sleep(250);
+                Thread.sleep(3000);
             } catch (InterruptedException e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();

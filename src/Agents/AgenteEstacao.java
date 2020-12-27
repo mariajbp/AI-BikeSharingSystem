@@ -32,7 +32,8 @@ public class AgenteEstacao extends Agent {
     boolean isFull;
     volatile Map<AID,Boolean> users = new HashMap<>();
     Set<AID> usersComing = new HashSet<>();
-
+    // 0 : Desconto , 1 : Normal, 2 : Expensive
+    private Integer[] dealHistory= new Integer[]{0,0,0};
 
 
     public void setup(){
@@ -62,7 +63,9 @@ public class AgenteEstacao extends Agent {
 
     public int calcProposal(AID user){
         double currentOccup=(double)capAtual/(double)capLim;
-        if(currentOccup>0.8) return pBase*=1.8;
+        if(currentOccup>0.8){
+            dealHistory[2]++;
+            return pBase*=1.8;}
         else
             if(currentOccup<0.2) return pBase*=0.2;
                 else return pBase;
@@ -122,11 +125,49 @@ public class AgenteEstacao extends Agent {
 
                     case ACLMessage.ACCEPT_PROPOSAL:{
                         AID usr = msg.getSender();
+                        try {
+                            switch ((int)((Object[]) msg.getContentObject())[0] ){
+                                case 20 :
+                                    dealHistory[0]++;
+                                    break;
+                                case 100 :
+                                    dealHistory[1]++;
+                                    break;
+                                case 180 :
+                                    dealHistory[2]++;
+                                    break;
+                            };
+                        } catch (UnreadableException e) {
+                            e.printStackTrace();
+                        }
                         usersComing.add(usr);
                         break;
                     }
                     case ACLMessage.REJECT_PROPOSAL:{
 
+                        break;
+                    }
+                    case ACLMessage.REQUEST:{
+                        String sss="";
+                        try {
+                            sss = (String) ((Object[]) msg.getContentObject())[0];
+                        } catch (UnreadableException e) {
+                            e.printStackTrace();
+                        }
+                        if(sss.equals("Stats")){
+                            msg = msg.createReply();
+                            msg.setPerformative(ACLMessage.INFORM);
+                            Object[] sendObj = new Object[]{
+                                    "Stats",
+                                    capAtual/capLim,
+                                    dealHistory
+                            };
+                            try {
+                                msg.setContentObject(sendObj);
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                        }
                         break;
                     }
 

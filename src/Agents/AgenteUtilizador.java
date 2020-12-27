@@ -29,8 +29,6 @@ public class AgenteUtilizador extends Agent {
     private boolean stay=false;
 
     public void setup(){
-
-
         Object[] args = getArguments();
         posAtual=(Posicao) args[0];
         dest = (Posicao) args[1];
@@ -116,6 +114,7 @@ public class AgenteUtilizador extends Agent {
                         msg =msg.createReply();
                         if(persona.ponder(posAtual.euclideanDistance((Posicao) cont[1]),(int) cont[2])){
                             msg.setPerformative(ACLMessage.ACCEPT_PROPOSAL);
+                            try{msg.setContentObject(new Object[]{cont[2]});}catch (Exception e){e.printStackTrace();}
                             deliveryStation= st;
                             dest=(Posicao) cont[1];
                         }

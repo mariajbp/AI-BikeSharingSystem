@@ -37,5 +37,7 @@ public class APE implements Serializable {
     }
 
 
-
+    public Posicao getPosicao() {
+        return pos;
+    }
 }

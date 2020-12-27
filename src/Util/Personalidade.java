@@ -4,6 +4,11 @@ import java.io.Serializable;
 import java.util.Random;
 
 public class Personalidade implements Serializable {
+    private int fitLevel;
+    private int wealthLevel;
+
+
+
     private int maxDistance;
     private int maxPrice;
     private boolean done;
