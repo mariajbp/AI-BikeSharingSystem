@@ -150,7 +150,6 @@ public class AgenteUtilizador extends Agent {
 
             doDelete();
 
-
         }
     }
 }
