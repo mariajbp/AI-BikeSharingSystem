@@ -148,7 +148,6 @@ public class AgenteUtilizador extends Agent {
 
             takeDown();
 
-
         }
     }
 }

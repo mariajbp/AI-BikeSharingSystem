@@ -8,6 +8,8 @@
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="jade" level="project" />
-    <orderEntry type="library" name="commons-codec-1.15" level="project" />
+    <orderEntry type="library" name="commons-codec-1" level="project" />
+    <orderEntry type="library" name="jade1" level="project" />
+    <orderEntry type="library" name="jfreechart-1.5.0" level="project" />
   </component>
 </module>
