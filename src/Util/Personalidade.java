@@ -24,14 +24,18 @@ public class Personalidade implements Serializable {
 
     public Personalidade() {
         Random r = new Random();
-        maxDistance= r.nextInt(100);
-        maxPrice= r.nextInt(300);
+        maxDistance = 1;
+        /*
+        maxDistance= r.ints(50,100).findAny().getAsInt();
+
+         */
+        maxPrice= r.ints(20,180).findAny().getAsInt();
         done= false;
 
     }
 
     public boolean ponder(double dist, int price){
-        System.out.println("PERSONA PONDERINg");
+        System.out.println("PERSONA PONDERING");
         if(done) return  false;
         if(price>maxPrice || dist>maxDistance) return false;
         done = true;

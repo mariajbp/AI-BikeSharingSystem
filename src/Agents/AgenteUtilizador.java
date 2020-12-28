@@ -5,8 +5,6 @@ import Util.Personalidade;
 import Util.Posicao;
 import jade.core.AID;
 import jade.core.Agent;
-import jade.core.AgentDescriptor;
-import jade.core.behaviours.Behaviour;
 import jade.core.behaviours.CyclicBehaviour;
 import jade.core.behaviours.OneShotBehaviour;
 import jade.core.behaviours.TickerBehaviour;
@@ -20,6 +18,7 @@ import jade.lang.acl.UnreadableException;
 import java.io.IOException;
 
 public class AgenteUtilizador extends Agent {
+    private Posicao posInicial;
     private Posicao posAtual;
     private Posicao dest;
     private double dist2dest;
@@ -27,10 +26,11 @@ public class AgenteUtilizador extends Agent {
     final Personalidade persona= new Personalidade();
     private AID deliveryStation ;
     private boolean stay=false;
+    private boolean arriving=false;
 
     public void setup(){
         Object[] args = getArguments();
-        posAtual=(Posicao) args[0];
+        posAtual= posInicial =(Posicao) args[0];
         dest = (Posicao) args[1];
         System.out.println(getAID().getLocalName()+"From:"+posAtual+": Goal:"+ dest+persona);
         dist2dest = dest.euclideanDistance(posAtual);
@@ -47,7 +47,7 @@ public class AgenteUtilizador extends Agent {
 
 
         addBehaviour(new UserTicker(this,1000));
-        addBehaviour(new UserReciever(this));
+        addBehaviour(new UserReceiver(this));
     }
 
 
@@ -60,31 +60,46 @@ public class AgenteUtilizador extends Agent {
         protected void onTick() {
             Posicao pa = posAtual;
             //System.out.println(getAID().getLocalName()+" : "+posAtual);
-            if(!stay&&(posAtual = posAtual.nextStep(dest)).equals(pa)){
-                System.out.println(getAID().getLocalName()+": FinalDest");
-                stay=true;
-                addBehaviour(new OneShotDeliver());
+            if(!stay && (posAtual = posAtual.nextStep(dest)).equals(pa)){
+                if(deliveryStation!=null) {
+                    System.out.println(getAID().getLocalName() + ": FinalDest");
+                    stay = true;
+                    addBehaviour(new OneShotDeliver());
+                }
+                else {
+                    ACLMessage msg = new ACLMessage(ACLMessage.REQUEST);
+                    Object[] cont = new Object[]{"UserLost", posAtual};
+                    try {
+                        msg.setContentObject(cont);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                    msg.addReceiver(monitor);
+                    send(msg);
+                }
             }
-            ACLMessage msg;
-            if(posAtual.euclideanDistance(dest)<(dist2dest*1/4))
-                msg = new ACLMessage(ACLMessage.CFP);
-            else
-                msg= new ACLMessage(ACLMessage.INFORM);
+            else {
+                ACLMessage msg;
+                if (!arriving&&posAtual.euclideanDistance(dest) < (dist2dest * 1 / 4))
+                    msg = new ACLMessage(ACLMessage.CFP);
+                else
+                    msg = new ACLMessage(ACLMessage.INFORM);
 
-            msg.addReceiver(monitor);
-            try {
-                msg.setContentObject(posAtual);
-            } catch (IOException e) {
-                e.printStackTrace();
+                msg.addReceiver(monitor);
+                try {
+                    msg.setContentObject(posAtual);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                send(msg);
             }
-            send(msg);
         }
     }
 
 
 
-    public class UserReciever extends CyclicBehaviour {
-        public UserReciever(Agent a) {
+    public class UserReceiver extends CyclicBehaviour {
+        public UserReceiver(Agent a) {
             super(a);
         }
 
@@ -94,15 +109,12 @@ public class AgenteUtilizador extends Agent {
             if(msg!=null){
                 switch (msg.getPerformative()){
                     case ACLMessage.INFORM:
-                        Object[] cnt= new Object[0];
+                        Posicao pos = null;
                         try {
-                            cnt = (Object[]) msg.getContentObject();
+                            pos = (Posicao) msg.getContentObject();
                         } catch (UnreadableException e) {e.printStackTrace();}
-
-                        switch ((String)cnt[0]){
-                            case "i":
-                                break;
-                        }
+                        dest = pos;
+                        deliveryStation = msg.getSender();
                         break;
                     case ACLMessage.PROPOSE:{
                         System.out.println(getAID().getLocalName()+" : PROPOSAL REC");
@@ -112,11 +124,18 @@ public class AgenteUtilizador extends Agent {
                         } catch (UnreadableException e) {e.printStackTrace();}
                         AID st = msg.getSender();
                         msg =msg.createReply();
-                        if(persona.ponder(posAtual.euclideanDistance((Posicao) cont[1]),(int) cont[2])){
+                        if(!posInicial.equals(cont[1])&&persona.ponder(posAtual.euclideanDistance((Posicao) cont[1]),(int) cont[2])){
+                            ACLMessage msg2 = new ACLMessage(ACLMessage.CONFIRM);
                             msg.setPerformative(ACLMessage.ACCEPT_PROPOSAL);
-                            try{msg.setContentObject(new Object[]{cont[2]});}catch (Exception e){e.printStackTrace();}
+                            try{
+                                msg.setContentObject(new Object[]{cont[2]});
+                                msg2.setContentObject(st);
+                            }catch (Exception e){e.printStackTrace();}
                             deliveryStation= st;
                             dest=(Posicao) cont[1];
+                            msg2.addReceiver(monitor);
+                            send(msg2);
+                            arriving=true;
                         }
                         else
                             msg.setPerformative(ACLMessage.REJECT_PROPOSAL);

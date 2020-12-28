@@ -80,9 +80,11 @@ public class MainContainer {
             ContainerController newcontainer1 = a.initContainerInPlatform("localhost", "9887",
                     args_input[0].toString());
             List<AgentController> all= new ArrayList<>();
+            List<Posicao> stations = new ArrayList<>();
             for(int i = 0; i< ConfigVars.STATION_NUM; i++){
                 Random r =new Random();
                 Posicao ps =  new Posicao(r.nextInt( a.MAPSIZE),r.nextInt( a.MAPSIZE));
+                stations.add(ps);
                 Object[] staArgs= new Object[]{
                             new APE(ps), ps, 3
                     };
@@ -117,7 +119,7 @@ public class MainContainer {
                 Random r =new Random();
                 all.add(
                         newcontainer1.createNewAgent("User"+i, "Agents.AgenteUtilizador", new Object[]{
-                                new Posicao(r.nextInt(a.MAPSIZE),r.nextInt(a.MAPSIZE)),
+                                stations.get(r.nextInt(stations.size()-1)),
                                 new Posicao(r.nextInt(a.MAPSIZE),r.nextInt(a.MAPSIZE)) })
                 );}
             for(AgentController ac : all) ac.start();

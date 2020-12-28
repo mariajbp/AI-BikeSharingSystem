@@ -154,23 +154,51 @@ public class AgenteEstacao extends Agent {
                         } catch (UnreadableException e) {
                             e.printStackTrace();
                         }
-                        if(sss.equals("Stats")){
-                            msg = msg.createReply();
-                            msg.setPerformative(ACLMessage.INFORM);
-                            Object[] sendObj = new Object[]{
-                                    "Stats",
-                                    capAtual/capLim,
-                                    dealHistory
-                            };
-                            try {
-                                msg.setContentObject(sendObj);
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                            }
+                        switch (sss){
+                            case "Stats":
+                                msg = msg.createReply();
+                                msg.setPerformative(ACLMessage.INFORM);
+                                Object[] sendObj = new Object[]{
+                                        "Stats",
+                                        capAtual/capLim,
+                                        dealHistory
+                                };
+                                try {
+                                    msg.setContentObject(sendObj);
+                                } catch (IOException e) {
+                                    e.printStackTrace();
+                                }
+                                send(msg);
+                                break;
+                            case "Users":
+                                break;
+                            case "UserLost":
+                                AID usr = new AID();
+                                try {
+                                    usr =(AID) (msg.getContentObject());
+                                } catch (UnreadableException e) {e.printStackTrace();}
+                                usersComing.add(usr);
+                                msg = new ACLMessage(ACLMessage.INFORM);
+                                try {
+                                    msg.setContentObject(pos);
+                                } catch (IOException e) {
+                                    e.printStackTrace();
+                                }
+                                msg.addReceiver(usr);
+                                send(msg);
+                                break;
                         }
                         break;
                     }
+                    case ACLMessage.CONFIRM:
+                        AID id = new AID();
+                        try {
+                            id =(AID) (msg.getContentObject());
+                        } catch (UnreadableException e) {e.printStackTrace();}
 
+                        if(users.containsKey(id))
+                            users.remove(id);
+                        break;
                 }
             }
 
