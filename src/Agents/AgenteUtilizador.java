@@ -23,10 +23,10 @@ public class AgenteUtilizador extends Agent {
     private Posicao dest;
     private double dist2dest;
     private AID monitor;
-    final Personalidade persona= new Personalidade();
-    private AID deliveryStation ;
-    private boolean stay=false;
-    private boolean arriving=false;
+    private AID deliveryStation = null;
+    private boolean stay = false;
+    private boolean arriving = false;
+    final Personalidade persona = new Personalidade();
 
     public void setup(){
         Object[] args = getArguments();
@@ -106,51 +106,67 @@ public class AgenteUtilizador extends Agent {
         @Override
         public void action() {
             ACLMessage msg = receive();
-            if(msg!=null){
-                switch (msg.getPerformative()){
-                    case ACLMessage.INFORM:
-                        Posicao pos = null;
-                        try {
-                            pos = (Posicao) msg.getContentObject();
-                        } catch (UnreadableException e) {e.printStackTrace();}
-                        dest = pos;
-                        deliveryStation = msg.getSender();
-                        break;
-                    case ACLMessage.PROPOSE:{
-                        System.out.println(getAID().getLocalName()+" : PROPOSAL REC");
-                        Object[] cont= new Object[0];
+            if (msg != null) {
+                switch (msg.getPerformative()) {
+                    case ACLMessage.PROPOSE:
+                        System.out.println(getAID().getLocalName() + " : PROPOSAL REC");
+                        Object[] cont = new Object[0];
                         try {
                             cont = (Object[]) msg.getContentObject();
-                        } catch (UnreadableException e) {e.printStackTrace();}
-                        AID st = msg.getSender();
-                        msg =msg.createReply();
-                        if(!posInicial.equals(cont[1])&&persona.ponder(posAtual.euclideanDistance((Posicao) cont[1]),(int) cont[2])){
-                            ACLMessage msg2 = new ACLMessage(ACLMessage.CONFIRM);
-                            msg.setPerformative(ACLMessage.ACCEPT_PROPOSAL);
-                            try{
-                                msg.setContentObject(new Object[]{cont[2]});
-                                msg2.setContentObject(st);
-                            }catch (Exception e){e.printStackTrace();}
-                            deliveryStation= st;
-                            dest=(Posicao) cont[1];
-                            msg2.addReceiver(monitor);
-                            send(msg2);
-                            arriving=true;
+                        } catch (UnreadableException e) {
+                            e.printStackTrace();
                         }
-                        else
-                            msg.setPerformative(ACLMessage.REJECT_PROPOSAL);
-                        send(msg);
+                        String s = (String) cont[0];
+                        AID st = msg.getSender();
+                        msg = msg.createReply();
 
+                        switch (s) {
+                            case "proposeDelivery":
+                                if (!posInicial.equals(cont[1]) && persona.ponder(posAtual.euclideanDistance((Posicao) cont[1]), (int) cont[2])) {
+                                    ACLMessage msg2 = new ACLMessage(ACLMessage.CONFIRM);
+                                    msg.setPerformative(ACLMessage.ACCEPT_PROPOSAL);
+                                    try {
+                                        msg.setContentObject(new Object[]{cont[2]});
+                                        msg2.setContentObject(st);
+                                    } catch (Exception e) {
+                                        e.printStackTrace();
+                                    }
+                                    deliveryStation = st;
+                                    dest = (Posicao) cont[1];
+                                    arriving = true;
+                                    msg2.addReceiver(monitor);
+                                    send(msg2);
+                                } else
+                                    msg.setPerformative(ACLMessage.REJECT_PROPOSAL);
+                                send(msg);
+                                break;
+
+                            case "backupStation":
+                                ACLMessage msg2 = new ACLMessage(ACLMessage.CONFIRM);
+                                msg.setPerformative(ACLMessage.ACCEPT_PROPOSAL);
+                                try {
+                                    msg.setContentObject(new Object[]{cont[2]});
+                                    msg2.setContentObject(st);
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                }
+                                deliveryStation = st;
+                                dest = (Posicao) cont[1];
+                                arriving = true;
+
+                                msg2.addReceiver(monitor);
+                                send(msg2);
+                                send(msg);
+                                break;
+                        }
                         break;
-                    }
 
                 }
             }
+
+
         }
-
-
     }
-
 
     private class OneShotDeliver extends OneShotBehaviour {
         @Override

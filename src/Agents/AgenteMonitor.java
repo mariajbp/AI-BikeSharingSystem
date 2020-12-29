@@ -22,6 +22,7 @@ public class AgenteMonitor extends Agent {
     Map<AID, APE> estacoes = new HashMap<>();
     HashMap<AID,Posicao> userHistory = new HashMap<>();
     Map<AID,Boolean> userCalling = new HashMap<>();
+
     public void setup(){
         DFAgentDescription dfd = new DFAgentDescription();
         dfd.setName(getAID());
@@ -83,10 +84,10 @@ public class AgenteMonitor extends Agent {
                             for(Map.Entry<AID,APE> e : estacoes.entrySet() ){
                                 boolean isIn = e.getValue().isInside(p);
                                 boolean wasIn =e.getValue().isInside(last);
-                                if(isOld){
+                                if(isOld)
                                     sendSignal = (isIn != wasIn) || ( isIn && !didCall && isCalling);
-                                }else {sendSignal = isIn;}
-
+                                else
+                                    sendSignal = isIn;
 
                                 if(sendSignal) {
                                     ACLMessage retmsg = new ACLMessage(ACLMessage.INFORM);
@@ -107,13 +108,14 @@ public class AgenteMonitor extends Agent {
                                 userCalling.put(userId,isCalling);
                             }
                             break;
-                        case ACLMessage.REQUEST:
+                    case ACLMessage.REQUEST:
                             Object[] cont = null;
 
                             try {
                                 cont = (Object[]) msg.getContentObject();
                             } catch (UnreadableException e) {e.printStackTrace();}
                             String ss =(String) cont[0];
+                            AID usr = msg.getSender();
                             msg = msg.createReply();
                             msg.setPerformative(ACLMessage.INFORM);
 
@@ -134,7 +136,7 @@ public class AgenteMonitor extends Agent {
                                         }catch (Exception e){e.printStackTrace();}
                                     break;
                                 case "UserLost":
-                                    Object[] cont2 = new Object[]{"UserLost", msg.getSender()};
+                                    Object[] cont2 = new Object[]{"UserLost", usr};
                                     Posicao usrPos  = (Posicao) cont[1];
                                     msg = new ACLMessage(ACLMessage.REQUEST);
                                     try {
@@ -143,7 +145,7 @@ public class AgenteMonitor extends Agent {
                                         e.printStackTrace();
                                     }
                                     AID st = null;
-                                    double dist = 0;
+                                    double dist = 100000;
                                     for(Map.Entry<AID,APE> id : estacoes.entrySet()){
                                         if((id.getValue().getPosicao().euclideanDistance(usrPos)) < dist) {
                                             dist = id.getValue().getPosicao().euclideanDistance(usrPos);

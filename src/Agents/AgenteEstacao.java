@@ -148,12 +148,13 @@ public class AgenteEstacao extends Agent {
                         break;
                     }
                     case ACLMessage.REQUEST:{
-                        String sss="";
+                        Object[] cont = null;
                         try {
-                            sss = (String) ((Object[]) msg.getContentObject())[0];
+                            cont = (Object[]) msg.getContentObject();
                         } catch (UnreadableException e) {
                             e.printStackTrace();
                         }
+                        String sss= (String) cont[0];
                         switch (sss){
                             case "Stats":
                                 msg = msg.createReply();
@@ -173,19 +174,24 @@ public class AgenteEstacao extends Agent {
                             case "Users":
                                 break;
                             case "UserLost":
-                                AID usr = new AID();
+                                AID usr =(AID) cont[1];
+                                System.out.println("USERLOST: "+ usr +" STATION");
+                                users.put(usr, false);  // para parar de o perseguir e só mandar este inform?
+                                int i = calcProposal(usr);
+
+                                msg = new ACLMessage(ACLMessage.PROPOSE);
+
+                                sendObj = new Object[]{
+                                        "backupStation",
+                                        pos,
+                                        i
+                                };
                                 try {
-                                    usr =(AID) (msg.getContentObject());
-                                } catch (UnreadableException e) {e.printStackTrace();}
-                                usersComing.add(usr);
-                                msg = new ACLMessage(ACLMessage.INFORM);
-                                try {
-                                    msg.setContentObject(pos);
-                                } catch (IOException e) {
-                                    e.printStackTrace();
-                                }
+                                    msg.setContentObject(sendObj);
+                                } catch (IOException e){e.printStackTrace();}
                                 msg.addReceiver(usr);
                                 send(msg);
+                                System.out.println("SENT");
                                 break;
                         }
                         break;

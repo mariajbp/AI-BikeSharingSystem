@@ -28,7 +28,7 @@ public class Personalidade implements Serializable {
         /*
         maxDistance= r.ints(50,100).findAny().getAsInt();
 
-         */
+        */
         maxPrice= r.ints(20,180).findAny().getAsInt();
         done= false;
 
