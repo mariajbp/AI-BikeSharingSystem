@@ -18,14 +18,15 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class AgenteInterface extends Agent {
-    Mapa mapa = new Mapa(100);
-    AID monitor;
-    HashMap<AID,Integer> stationOccupation = new HashMap<>();
-    HashMap<AID, Integer[]> stationPricing= new HashMap<>();
+    private Mapa mapa;
+    private AID monitor;
+    private HashMap<AID,Integer> stationOccupation = new HashMap<>();
+    private HashMap<AID, Integer[]> stationPricing = new HashMap<>();
 
     @Override
     protected void setup() {
         super.setup();
+        mapa = new Mapa(100);
 
         DFAgentDescription df = new DFAgentDescription();
         ServiceDescription s = new ServiceDescription();
@@ -46,7 +47,7 @@ public class AgenteInterface extends Agent {
 
         ACLMessage recStas = receive();
         while((recStas=receive())==null){}
-        try {mapa.setStations((Map<AID, Posicao>) recStas.getContentObject());}catch (UnreadableException e){e.printStackTrace();}
+        try {mapa.setStations((Map<AID, Posicao>) recStas.getContentObject());} catch (UnreadableException e){e.printStackTrace();}
         System.out.println(mapa);
         ////Users
         ACLMessage getUsers = new ACLMessage(ACLMessage.REQUEST);
@@ -87,7 +88,7 @@ public class AgenteInterface extends Agent {
                 reqAllStats.addReceiver(st);
             }
             send(reqAllStats);
-            System.out.println ("Occupation"+ stationOccupation);
+            //System.out.println ("Occupation"+ stationOccupation);
 
         }
 

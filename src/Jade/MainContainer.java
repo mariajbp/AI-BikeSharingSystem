@@ -6,22 +6,18 @@ import Util.Posicao;
 import jade.core.Profile;
 import jade.core.ProfileImpl;
 import jade.core.Runtime;
-import jade.tools.sniffer.Agent;
 import jade.wrapper.AgentController;
 import jade.wrapper.ContainerController;
 import jade.wrapper.StaleProxyException;
 
-import java.io.ObjectInputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-import java.util.stream.IntStream;
 
 public class MainContainer {
 
     Runtime rt;
     ContainerController container;
-    public int MAPSIZE=200;
 
     public ContainerController initContainerInPlatform(String host, String port, String containerName) {
         // Get the JADE runtime interface (singleton)
@@ -83,10 +79,10 @@ public class MainContainer {
             List<Posicao> stations = new ArrayList<>();
             for(int i = 0; i< ConfigVars.STATION_NUM; i++){
                 Random r =new Random();
-                Posicao ps =  new Posicao(r.nextInt( a.MAPSIZE),r.nextInt( a.MAPSIZE));
+                Posicao ps =  new Posicao(r.nextInt(ConfigVars.MAP_SIZE),r.nextInt(ConfigVars.MAP_SIZE));
                 stations.add(ps);
                 Object[] staArgs= new Object[]{
-                            new APE(ps), ps, 3
+                            new APE(ps), ps, ConfigVars.CAP_INIT
                     };
 
                 all.add(
@@ -115,12 +111,12 @@ public class MainContainer {
             }
 
             all= new ArrayList<>();
-            for(int i=0;i<ConfigVars.MAX_USERS;i++){
+            for(int i=0;i<ConfigVars.INIT_USERS;i++){
                 Random r =new Random();
                 all.add(
                         newcontainer1.createNewAgent("User"+i, "Agents.AgenteUtilizador", new Object[]{
                                 stations.get(r.nextInt(stations.size()-1)),
-                                new Posicao(r.nextInt(a.MAPSIZE),r.nextInt(a.MAPSIZE)) })
+                                new Posicao(r.nextInt(ConfigVars.MAP_SIZE),r.nextInt(ConfigVars.MAP_SIZE)) })
                 );}
             for(AgentController ac : all) ac.start();
 

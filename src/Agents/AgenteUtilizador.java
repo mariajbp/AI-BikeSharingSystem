@@ -23,10 +23,10 @@ public class AgenteUtilizador extends Agent {
     private Posicao dest;
     private double dist2dest;
     private AID monitor;
-    private AID deliveryStation = null;
-    private boolean stay = false;
-    private boolean arriving = false;
-    final Personalidade persona = new Personalidade();
+    private AID deliveryStation;
+    private boolean stay;
+    private boolean arriving;
+    private Personalidade persona = new Personalidade();
 
     public void setup(){
         Object[] args = getArguments();
@@ -34,6 +34,9 @@ public class AgenteUtilizador extends Agent {
         dest = (Posicao) args[1];
         System.out.println(getAID().getLocalName()+"From:"+posAtual+": Goal:"+ dest+persona);
         dist2dest = dest.euclideanDistance(posAtual);
+        deliveryStation = null;
+        stay = false;
+        arriving = false;
 
         DFAgentDescription dfd= new DFAgentDescription();
         ServiceDescription sd = new ServiceDescription();
@@ -127,7 +130,7 @@ public class AgenteUtilizador extends Agent {
                                     msg.setPerformative(ACLMessage.ACCEPT_PROPOSAL);
                                     try {
                                         msg.setContentObject(new Object[]{cont[2]});
-                                        msg2.setContentObject(st);
+                                        msg2.setContentObject(new Object[]{"haveStation",st});
                                     } catch (Exception e) {
                                         e.printStackTrace();
                                     }
@@ -146,7 +149,7 @@ public class AgenteUtilizador extends Agent {
                                 msg.setPerformative(ACLMessage.ACCEPT_PROPOSAL);
                                 try {
                                     msg.setContentObject(new Object[]{cont[2]});
-                                    msg2.setContentObject(st);
+                                    msg2.setContentObject(new Object[]{"haveStation",st});
                                 } catch (Exception e) {
                                     e.printStackTrace();
                                 }
@@ -180,6 +183,19 @@ public class AgenteUtilizador extends Agent {
             } catch (IOException e) {e.printStackTrace();}
             if(msg.getAllReceiver().hasNext())
                 send(msg);
+
+            msg = blockingReceive();
+            String s;
+            try {
+                cnt = (Object[]) msg.getContentObject();
+            } catch (UnreadableException e) {
+                e.printStackTrace();
+            }
+            s = (String) cnt[0];
+            if(s.equals("wait")){
+                blockingReceive();
+            }
+            // aqui recebe da estação o informa a dizer podes vir
             System.out.println(getAID().getLocalName()+": RIP");
 
             doDelete();

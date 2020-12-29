@@ -4,11 +4,6 @@ import java.io.Serializable;
 import java.util.Random;
 
 public class Personalidade implements Serializable {
-    private int fitLevel;
-    private int wealthLevel;
-
-
-
     private int maxDistance;
     private int maxPrice;
     private boolean done;
@@ -24,11 +19,7 @@ public class Personalidade implements Serializable {
 
     public Personalidade() {
         Random r = new Random();
-        maxDistance = 1;
-        /*
         maxDistance= r.ints(50,100).findAny().getAsInt();
-
-        */
         maxPrice= r.ints(20,180).findAny().getAsInt();
         done= false;
 

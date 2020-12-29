@@ -10,18 +10,16 @@ import jade.domain.FIPAAgentManagement.DFAgentDescription;
 import jade.domain.FIPAAgentManagement.ServiceDescription;
 import jade.domain.FIPAException;
 import jade.lang.acl.ACLMessage;
-import jade.lang.acl.MessageTemplate;
 import jade.lang.acl.UnreadableException;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
 public class AgenteMonitor extends Agent {
-    Map<AID, APE> estacoes = new HashMap<>();
-    HashMap<AID,Posicao> userHistory = new HashMap<>();
-    Map<AID,Boolean> userCalling = new HashMap<>();
+    private Map<AID, APE> estacoes = new HashMap<>();
+    private HashMap<AID,Posicao> userHistory = new HashMap<>();
+    private Map<AID,Boolean> userCalling = new HashMap<>();
 
     public void setup(){
         DFAgentDescription dfd = new DFAgentDescription();
@@ -158,26 +156,30 @@ public class AgenteMonitor extends Agent {
                             send(msg);
                         break;
                     case ACLMessage.CONFIRM:
-                        AID st = null;
-                        msg = new ACLMessage(ACLMessage.CONFIRM);
+                        cont = null;
                         try {
-                            st =(AID) (msg.getContentObject());
+                            cont = (Object[]) (msg.getContentObject());
                         } catch (UnreadableException e) {e.printStackTrace();}
+                        s = (String) cont[0];
 
-                        for(AID id : estacoes.keySet()){
-                            try {
-                                msg.setContentObject(userId);
-                            } catch (IOException e) {
-                                e.printStackTrace();
+                        msg = new ACLMessage(ACLMessage.CONFIRM);
+                        if(s.equals("haveStation")) {
+                            for (AID id : estacoes.keySet()) {
+                                try {
+                                    msg.setContentObject(userId);
+                                } catch (IOException e) {
+                                    e.printStackTrace();
+                                }
+                                msg.addReceiver(id);
                             }
-                            msg.addReceiver(id);
+                            msg.removeReceiver((AID) cont[1]);
+                            send(msg);
+                        } else {
+                            userHistory.remove(cont[1]);
+                            userCalling.remove(cont[1]);
                         }
-                        msg.removeReceiver(st);
-                        send(msg);
                         break;
                 }
-
-
             }
 
         }

@@ -1,49 +1,52 @@
 package Agents;
 
-import java.io.IOException;
-import java.util.*;
-import java.util.concurrent.SynchronousQueue;
-
-import jade.core.behaviours.TickerBehaviour;
-import jade.lang.acl.MessageTemplate;
-import org.apache.commons.codec.binary.Base64;
-
 import Util.APE;
+import Util.ConfigVars;
 import Util.Posicao;
 import jade.core.AID;
 import jade.core.Agent;
-import jade.core.behaviours.Behaviour;
 import jade.core.behaviours.CyclicBehaviour;
+import jade.core.behaviours.TickerBehaviour;
 import jade.domain.DFService;
 import jade.domain.FIPAAgentManagement.DFAgentDescription;
 import jade.domain.FIPAAgentManagement.ServiceDescription;
 import jade.domain.FIPAException;
 import jade.lang.acl.ACLMessage;
 import jade.lang.acl.UnreadableException;
+import jade.wrapper.StaleProxyException;
 
-import javax.swing.text.Position;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Queue;
+import java.util.Random;
+import java.util.concurrent.SynchronousQueue;
 
 public class AgenteEstacao extends Agent {
-    private int pBase = 100;
-    APE ape;
-    Posicao pos;
-    int capAtual;
-    int capLim;
-    boolean isFull;
-    volatile Map<AID,Boolean> users = new HashMap<>();
-    Set<AID> usersComing = new HashSet<>();
+    private int pBase;
+    private APE ape;
+    private AID monitor;
+    private Posicao pos;
+    private int capAtual;
+    private int capLim;
+    private int createdUsers;
+    // users na APE
+    private Map<AID,Boolean> users = new HashMap<>();
+    //users em espera pra deixar a bike
+    private Queue<AID> usersWaiting = new SynchronousQueue<>();
     // 0 : Desconto , 1 : Normal, 2 : Expensive
     private Integer[] dealHistory= new Integer[]{0,0,0};
 
 
     public void setup(){
         Object[] args = getArguments();
-        this.pos=(Posicao) args[1];
-        ape =(APE) args[0];
-        capLim=(int) args[2];
-        capAtual=0;
-        isFull=false;
-
+        pBase = 100;
+        this.pos = (Posicao) args[1];
+        ape = (APE) args[0];
+        capLim = (int) args[2];
+        capAtual = capLim/2;
+        createdUsers = 0;
+        monitor = null;
 
         System.out.println(getAID().getLocalName()+": "+ pos);
         DFAgentDescription dfd = new DFAgentDescription();
@@ -115,9 +118,64 @@ public class AgenteEstacao extends Agent {
                                 break;
                             case "depositBike":
                                 AID usr = msg.getSender();
-                                usersComing.remove(usr);
-                                capAtual++;
-                                System.out.println(usr.getLocalName()+" Depositou na "+getAID().getLocalName());
+                                ACLMessage msg2;
+                                if(capAtual < capLim) {
+                                    capAtual++;
+                                    System.out.println(usr.getLocalName() + " Depositou na " + getAID().getLocalName());
+                                    msg = new ACLMessage(ACLMessage.INFORM);
+                                    try {
+                                        msg.setContentObject(new Object[]{"done"});
+                                    } catch (IOException e) {
+                                        e.printStackTrace();
+                                    }
+                                    msg.addReceiver(usr);
+                                } else {
+                                    usersWaiting.add(usr);
+                                    msg = new ACLMessage(ACLMessage.INFORM);
+                                    try {
+                                        msg.setContentObject(new Object[]{"wait"});
+                                    } catch (IOException e) {
+                                        e.printStackTrace();
+                                    }
+                                    msg.addReceiver(usr);
+                                }
+                                msg2 = new ACLMessage(ACLMessage.CONFIRM);
+                                try {
+                                    msg2.setContentObject(new Object[]{"received", usr});
+                                } catch (IOException e) {
+                                    e.printStackTrace();
+                                }
+                                if(monitor == null) {
+                                    DFAgentDescription dfd= new DFAgentDescription();
+                                    ServiceDescription sd = new ServiceDescription();
+                                    sd.setType("monitor");
+                                    dfd.addServices(sd);
+                                    try {
+                                        monitor = DFService.search(myAgent, dfd)[0].getName();
+                                    } catch (FIPAException e) {
+                                        e.printStackTrace();
+                                    }
+                                }
+                                msg2.addReceiver(monitor);
+                                send(msg2);
+                                send(msg);
+                                //Create users
+                                Random r = new Random();
+                                int y = r.nextInt(4);
+                                for(int i = 0; i <= y; i++) {
+                                    if(capAtual > 0) {
+                                        Random x = new Random();
+                                        try {
+                                            getContainerController().createNewAgent("User" + getAID().getLocalName() + createdUsers, "Agents.AgenteUtilizador", new Object[]{
+                                                    pos,
+                                                    new Posicao(x.nextInt(ConfigVars.getMapSize()), x.nextInt(ConfigVars.getMapSize()))}).start();
+                                            createdUsers++;
+                                            capAtual--;
+                                        } catch (StaleProxyException e) {
+                                            e.printStackTrace();
+                                        }
+                                    }
+                                }
                                 break;
                         }
                     break;
@@ -125,6 +183,7 @@ public class AgenteEstacao extends Agent {
 
                     case ACLMessage.ACCEPT_PROPOSAL:{
                         AID usr = msg.getSender();
+                        users.put(usr, false);
                         try {
                             switch ((int)((Object[]) msg.getContentObject())[0] ){
                                 case 20 :
@@ -140,7 +199,6 @@ public class AgenteEstacao extends Agent {
                         } catch (UnreadableException e) {
                             e.printStackTrace();
                         }
-                        usersComing.add(usr);
                         break;
                     }
                     case ACLMessage.REJECT_PROPOSAL:{
@@ -176,7 +234,6 @@ public class AgenteEstacao extends Agent {
                             case "UserLost":
                                 AID usr =(AID) cont[1];
                                 System.out.println("USERLOST: "+ usr +" STATION");
-                                users.put(usr, false);  // para parar de o perseguir e só mandar este inform?
                                 int i = calcProposal(usr);
 
                                 msg = new ACLMessage(ACLMessage.PROPOSE);
@@ -221,24 +278,39 @@ public class AgenteEstacao extends Agent {
 
         @Override
         protected void onTick() {
-            ACLMessage msg = new ACLMessage(ACLMessage.PROPOSE);
-            users.forEach((usr,isRdy)->{
-                if(isRdy){
-                    int i = calcProposal(usr);
-                    Object[] cont = new Object[]{
-                            "proposeDelivery",
-                            pos,
-                            i
-                    };
-                    try {
-                        msg.setContentObject(cont);
-                    } catch (IOException e){e.printStackTrace();}
-                    msg.addReceiver(usr);
-
+            int x = capLim - capAtual;
+            AID id = null;
+            if (!usersWaiting.isEmpty()) {
+                if (x > 0) {
+                    for (int i = 0; i < x; i++) {
+                        id = usersWaiting.remove();
+                        ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
+                        msg.addReceiver(id);
+                        send(msg);
+                    }
                 }
-            });
-            if(msg.getAllReceiver().hasNext())
-                send(msg);
+            } else {
+                ACLMessage msg = new ACLMessage(ACLMessage.PROPOSE);
+                users.forEach((usr, isRdy) -> {
+                    if (isRdy) {
+                        int i = calcProposal(usr);
+                        Object[] cont = new Object[]{
+                                "proposeDelivery",
+                                pos,
+                                i
+                        };
+                        try {
+                            msg.setContentObject(cont);
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                        msg.addReceiver(usr);
+
+                    }
+                });
+                if (msg.getAllReceiver().hasNext())
+                    send(msg);
+            }
         }
 
     }
