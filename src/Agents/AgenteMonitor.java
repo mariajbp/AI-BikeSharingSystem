@@ -128,9 +128,9 @@ public class AgenteMonitor extends Agent {
                                             msg.setContentObject(sendThis);
                                         }catch (Exception e){e.printStackTrace();}
                                         break;
-                                case "Users":
+                                case "Stats":
                                         try {
-                                            msg.setContentObject(userHistory);
+                                            msg.setContentObject( new Object[]{"Users",userHistory});
                                         }catch (Exception e){e.printStackTrace();}
                                     break;
                                 case "UserLost":

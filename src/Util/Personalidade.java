@@ -26,7 +26,7 @@ public class Personalidade implements Serializable {
     }
 
     public boolean ponder(double dist, int price){
-        System.out.println("PERSONA PONDERING");
+
         if(done) return  false;
         if(price>maxPrice || dist>maxDistance) return false;
         done = true;

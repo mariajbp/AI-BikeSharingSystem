@@ -1,6 +1,7 @@
 package Agents;
 
 
+import Util.ConfigVars;
 import Util.Personalidade;
 import Util.Posicao;
 import jade.core.AID;
@@ -38,8 +39,20 @@ public class AgenteUtilizador extends Agent {
         stay = false;
         arriving = false;
 
-        DFAgentDescription dfd= new DFAgentDescription();
+        DFAgentDescription dfd = new DFAgentDescription();
+        dfd.setName(getAID());
         ServiceDescription sd = new ServiceDescription();
+        sd.setName(getLocalName());
+        sd.setType("utilizador");
+        dfd.addServices(sd);
+        try {
+            DFService.register(this, dfd);
+        } catch (FIPAException fe) {
+            fe.printStackTrace();
+        }
+
+        dfd= new DFAgentDescription();
+        sd = new ServiceDescription();
         sd.setType("monitor");
         dfd.addServices(sd);
         try {
@@ -49,14 +62,14 @@ public class AgenteUtilizador extends Agent {
         }
 
 
-        addBehaviour(new UserTicker(this,1000));
+        addBehaviour(new UserTicker(this));
         addBehaviour(new UserReceiver(this));
     }
 
 
     public class UserTicker extends TickerBehaviour {
-        public UserTicker(Agent a, long period) {
-            super(a, period);
+        public UserTicker(Agent a) {
+            super(a, (long)(((float)1000) * ConfigVars.SPEED));
         }
 
         @Override
@@ -111,8 +124,35 @@ public class AgenteUtilizador extends Agent {
             ACLMessage msg = receive();
             if (msg != null) {
                 switch (msg.getPerformative()) {
+                    case ACLMessage.REQUEST:{
+                        Object[] cont = null;
+                        try {
+                            cont = (Object[]) msg.getContentObject();
+                        } catch (UnreadableException e) {
+                            e.printStackTrace();
+                        }
+
+                        String sss= null;
+                        try {
+                            sss = (String) ((Object[])msg.getContentObject())[0];
+                        } catch (UnreadableException e) {e.printStackTrace();}
+
+                        switch (sss) {
+                            case "Stats":{
+                                msg = msg.createReply();
+                                msg.setPerformative(ACLMessage.INFORM);
+                                Object[] sendObj = new Object[]{
+                                        "User",
+                                        posAtual};
+                                try {
+                                    msg.setContentObject(sendObj);
+                                } catch (IOException e) {e.printStackTrace();}
+                                send(msg);
+                                break;}
+                        }
+                        break;
+                    }
                     case ACLMessage.PROPOSE:
-                        System.out.println(getAID().getLocalName() + " : PROPOSAL REC");
                         Object[] cont = new Object[0];
                         try {
                             cont = (Object[]) msg.getContentObject();

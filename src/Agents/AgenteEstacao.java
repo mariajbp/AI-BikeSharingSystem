@@ -16,10 +16,7 @@ import jade.lang.acl.UnreadableException;
 import jade.wrapper.StaleProxyException;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Queue;
-import java.util.Random;
+import java.util.*;
 import java.util.concurrent.SynchronousQueue;
 
 public class AgenteEstacao extends Agent {
@@ -67,7 +64,6 @@ public class AgenteEstacao extends Agent {
     public int calcProposal(AID user){
         double currentOccup=(double)capAtual/(double)capLim;
         if(currentOccup>0.8){
-            dealHistory[2]++;
             return pBase*=1.8;}
         else
             if(currentOccup<0.2) return pBase*=0.2;
@@ -100,14 +96,12 @@ public class AgenteEstacao extends Agent {
                         switch (subject){
                             case "SignalInOutAPE":
                                 AID userSignal =(AID) msgCont[1];
-                                System.out.println(getAID().getLocalName()+": "+ getAID().getHap()+" InOut");
                                 if(users.containsKey(userSignal)){
                                     users.remove(userSignal);
                                 }else {users.put(userSignal,false);}
                                 break;
                             case "callingForProposal":
                                 AID user =(AID) msgCont[1];
-                                System.out.println(getAID().getLocalName()+": "+ getAID().getHap()+" InOutCALLING");
 
                                 if(users.containsKey(user)){
                                     if(users.get(user))
@@ -161,8 +155,8 @@ public class AgenteEstacao extends Agent {
                                 send(msg);
                                 //Create users
                                 Random r = new Random();
-                                int y = r.nextInt(4);
-                                for(int i = 0; i <= y; i++) {
+                                int y = r.nextInt(5);
+                                for(int i = 0; i < y; i++) {
                                     if(capAtual > 0) {
                                         Random x = new Random();
                                         try {
@@ -184,7 +178,7 @@ public class AgenteEstacao extends Agent {
                     case ACLMessage.ACCEPT_PROPOSAL:{
                         AID usr = msg.getSender();
                         users.put(usr, false);
-                        try {
+                        try {System.out.println((int)((Object[]) msg.getContentObject())[0] );
                             switch ((int)((Object[]) msg.getContentObject())[0] ){
                                 case 20 :
                                     dealHistory[0]++;
@@ -218,8 +212,8 @@ public class AgenteEstacao extends Agent {
                                 msg = msg.createReply();
                                 msg.setPerformative(ACLMessage.INFORM);
                                 Object[] sendObj = new Object[]{
-                                        "Stats",
-                                        capAtual/capLim,
+                                        "Station",
+                                        (int)(((double)capAtual/(double)capLim)*100),
                                         dealHistory
                                 };
                                 try {
@@ -228,8 +222,6 @@ public class AgenteEstacao extends Agent {
                                     e.printStackTrace();
                                 }
                                 send(msg);
-                                break;
-                            case "Users":
                                 break;
                             case "UserLost":
                                 AID usr =(AID) cont[1];
@@ -248,7 +240,6 @@ public class AgenteEstacao extends Agent {
                                 } catch (IOException e){e.printStackTrace();}
                                 msg.addReceiver(usr);
                                 send(msg);
-                                System.out.println("SENT");
                                 break;
                         }
                         break;
@@ -273,7 +264,7 @@ public class AgenteEstacao extends Agent {
 
 
         public PursuitUsers(Agent a) {
-            super(a, 1000);
+            super(a,  (long)(((float)1000) * ConfigVars.SPEED)  );
         }
 
         @Override
