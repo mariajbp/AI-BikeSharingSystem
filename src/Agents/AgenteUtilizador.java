@@ -33,7 +33,6 @@ public class AgenteUtilizador extends Agent {
         Object[] args = getArguments();
         posAtual= posInicial =(Posicao) args[0];
         dest = (Posicao) args[1];
-        System.out.println(getAID().getLocalName()+"From:"+posAtual+": Goal:"+ dest+persona);
         dist2dest = dest.euclideanDistance(posAtual);
         deliveryStation = null;
         stay = false;
@@ -78,7 +77,7 @@ public class AgenteUtilizador extends Agent {
             //System.out.println(getAID().getLocalName()+" : "+posAtual);
             if(!stay && (posAtual = posAtual.nextStep(dest)).equals(pa)){
                 if(deliveryStation!=null) {
-                    System.out.println(getAID().getLocalName() + ": FinalDest");
+                    //System.out.println(getAID().getLocalName() + ": FinalDest");
                     stay = true;
                     addBehaviour(new OneShotDeliver());
                 }

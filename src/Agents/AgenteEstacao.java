@@ -30,7 +30,7 @@ public class AgenteEstacao extends Agent {
     // users na APE
     private Map<AID,Boolean> users = new HashMap<>();
     //users em espera pra deixar a bike
-    private Queue<AID> usersWaiting = new SynchronousQueue<>();
+    private Queue<AID> usersWaiting = new LinkedList<>();
     // 0 : Desconto , 1 : Normal, 2 : Expensive
     private Integer[] dealHistory= new Integer[]{0,0,0};
 
@@ -41,11 +41,11 @@ public class AgenteEstacao extends Agent {
         this.pos = (Posicao) args[1];
         ape = (APE) args[0];
         capLim = (int) args[2];
-        capAtual = capLim/2;
+        capAtual =(int) (2*(float)capLim/3.f);
         createdUsers = 0;
         monitor = null;
 
-        System.out.println(getAID().getLocalName()+": "+ pos);
+        //System.out.println(getAID().getLocalName()+": "+ pos);
         DFAgentDescription dfd = new DFAgentDescription();
         dfd.setName(getAID());
         ServiceDescription sd = new ServiceDescription();
@@ -59,14 +59,15 @@ public class AgenteEstacao extends Agent {
         }
         addBehaviour(new RecieveStation());
         addBehaviour(new PursuitUsers(this));
+        addBehaviour(new CreateUsers(this));
     }
 
     public int calcProposal(AID user){
-        double currentOccup=(double)capAtual/(double)capLim;
+        double currentOccup= ((double)capAtual)/((double)capLim);
         if(currentOccup>0.8){
-            return pBase*=1.8;}
+            return (int) (pBase*1.8);}
         else
-            if(currentOccup<0.2) return pBase*=0.2;
+            if(currentOccup<0.2) return (int) (pBase*0.2);
                 else return pBase;
     }
 
@@ -124,7 +125,7 @@ public class AgenteEstacao extends Agent {
                                     }
                                     msg.addReceiver(usr);
                                 } else {
-                                    usersWaiting.add(usr);
+                                    usersWaiting.offer(usr);
                                     msg = new ACLMessage(ACLMessage.INFORM);
                                     try {
                                         msg.setContentObject(new Object[]{"wait"});
@@ -153,23 +154,7 @@ public class AgenteEstacao extends Agent {
                                 msg2.addReceiver(monitor);
                                 send(msg2);
                                 send(msg);
-                                //Create users
-                                Random r = new Random();
-                                int y = r.nextInt(5);
-                                for(int i = 0; i < y; i++) {
-                                    if(capAtual > 0) {
-                                        Random x = new Random();
-                                        try {
-                                            getContainerController().createNewAgent("User" + getAID().getLocalName() + createdUsers, "Agents.AgenteUtilizador", new Object[]{
-                                                    pos,
-                                                    new Posicao(x.nextInt(ConfigVars.getMapSize()), x.nextInt(ConfigVars.getMapSize()))}).start();
-                                            createdUsers++;
-                                            capAtual--;
-                                        } catch (StaleProxyException e) {
-                                            e.printStackTrace();
-                                        }
-                                    }
-                                }
+
                                 break;
                         }
                     break;
@@ -178,7 +163,8 @@ public class AgenteEstacao extends Agent {
                     case ACLMessage.ACCEPT_PROPOSAL:{
                         AID usr = msg.getSender();
                         users.put(usr, false);
-                        try {System.out.println((int)((Object[]) msg.getContentObject())[0] );
+                        try {
+                            //System.out.println((int)((Object[]) msg.getContentObject())[0] );
                             switch ((int)((Object[]) msg.getContentObject())[0] ){
                                 case 20 :
                                     dealHistory[0]++;
@@ -260,6 +246,48 @@ public class AgenteEstacao extends Agent {
         }
     }
 
+    public class CreateUsers extends TickerBehaviour {
+        public CreateUsers(Agent a) {
+            super(a,  (long)(((float)3000) * ConfigVars.SPEED)  );
+        }
+
+        @Override
+        protected void onTick() {
+
+            //Random
+            Double[] ratio = new Double[3];
+            for(int i=0; i<3;i++)
+                ratio[i]= dealHistory[i]/(double) Arrays.stream(dealHistory).reduce(0,(acc,x)-> acc+=x);
+
+
+
+            Random r = new Random();
+
+               int y =r.nextInt(11-(int)(10*ratio[0])+(int)(10*ratio[2]) );
+               if(y>8) y=2;
+               else if(y>6) y=1;
+                        else y=0;
+
+            //Create users
+            for(int i = 0; i < y; i++) {
+                if(capAtual > 0) {
+                    Random x = new Random();
+                    try {
+                        getContainerController().createNewAgent("User" + getAID().getLocalName() + createdUsers, "Agents.AgenteUtilizador", new Object[]{
+                                pos,
+                                new Posicao(x.nextInt(ConfigVars.getMapSize()), x.nextInt(ConfigVars.getMapSize()))}).start();
+                        createdUsers++;
+                        capAtual--;
+                    } catch (StaleProxyException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+
+        }
+    }
+
+
     public class PursuitUsers extends TickerBehaviour {
 
 
@@ -274,7 +302,7 @@ public class AgenteEstacao extends Agent {
             if (!usersWaiting.isEmpty()) {
                 if (x > 0) {
                     for (int i = 0; i < x; i++) {
-                        id = usersWaiting.remove();
+                        id = usersWaiting.poll();
                         ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
                         msg.addReceiver(id);
                         send(msg);

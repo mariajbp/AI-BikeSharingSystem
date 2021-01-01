@@ -2,10 +2,10 @@ package Util;
 
 public class ConfigVars {
 
-    public static int MAP_SIZE = 200;
-    public static int INIT_USERS = 5;
-    public static int STATION_NUM = 3;
-    public static int CAP_INIT = 30;
+    public static int MAP_SIZE = 400;
+    public static int INIT_USERS = 30;
+    public static int STATION_NUM = 4;
+    public static int CAP_INIT = 10;
 
     public static float SPEED = 0.1f;
 

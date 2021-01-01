@@ -19,8 +19,8 @@ public class Personalidade implements Serializable {
 
     public Personalidade() {
         Random r = new Random();
-        maxDistance= r.ints(50,100).findAny().getAsInt();
-        maxPrice= r.ints(20,180).findAny().getAsInt();
+        maxDistance= r.ints(60,100).findAny().getAsInt();
+        maxPrice= r.ints(21,200).findAny().getAsInt();
         done= false;
 
     }

@@ -4,6 +4,7 @@ import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.ui.ApplicationFrame;
 
+import javax.swing.*;
 import java.awt.*;
 import java.util.ArrayList;
 
@@ -23,10 +24,8 @@ public class ChartWindow extends ApplicationFrame {
             panels.add(chartPanel);
             }
 
-            getContentPane().add(panels.get(0), BorderLayout.SOUTH);
-
-           // getContentPane().add(panels.get(1), BorderLayout.SOUTH);
-
+            getContentPane().add(panels.get(0), BorderLayout.WEST);
+            getContentPane().add(panels.get(1), BorderLayout.EAST);
             getContentPane().add(panels.get(2), BorderLayout.NORTH);
 
 

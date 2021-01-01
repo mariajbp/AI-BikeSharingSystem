@@ -70,12 +70,11 @@ public class AgenteInterface extends Agent {
         ACLMessage recStas = receive();
         while((recStas=receive())==null){}
         try {mapa.setStations((Map<AID, Posicao>) recStas.getContentObject());} catch (UnreadableException e){e.printStackTrace();}
-        System.out.println(mapa);
 
 
 
 
-        System.out.println(mapa);
+
         addBehaviour(new InterfaceBehavior(this));
         addBehaviour(new InterfRecBehavior());
     }
