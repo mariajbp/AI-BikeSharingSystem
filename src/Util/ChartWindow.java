@@ -4,10 +4,9 @@ import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.ui.ApplicationFrame;
 
-import javax.swing.*;
 import java.awt.*;
 import java.util.ArrayList;
-
+/** Classe para abrir uma janela e apresentar os gráficos **/
 public class ChartWindow extends ApplicationFrame {
 
 

@@ -17,11 +17,15 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class AgenteMonitor extends Agent {
+    /** Utilizadores **/
     private Map<AID, APE> estacoes = new HashMap<>();
+    /** Ultima posição dos Utilizadores **/
     private HashMap<AID,Posicao> userHistory = new HashMap<>();
+    /** Utilizadores a solicitar estações **/
     private Map<AID,Boolean> userCalling = new HashMap<>();
 
     public void setup(){
+        /** Inscrever o Monitor no DF **/
         DFAgentDescription dfd = new DFAgentDescription();
         dfd.setName(getAID());
         ServiceDescription sd = new ServiceDescription();
@@ -33,6 +37,7 @@ public class AgenteMonitor extends Agent {
         } catch (FIPAException fe) {
             fe.printStackTrace();
         }
+        /** Procurar as Estações  **/
         DFAgentDescription df = new DFAgentDescription();
         ServiceDescription s = new ServiceDescription();
         s.setType("station");
@@ -55,7 +60,7 @@ public class AgenteMonitor extends Agent {
         addBehaviour(new MonitorBehavior());
     }
 
-
+    /** Behavior base do Monitor **/
     public class MonitorBehavior extends CyclicBehaviour{
 
         @Override
@@ -65,6 +70,7 @@ public class AgenteMonitor extends Agent {
                 Posicao p = new Posicao(0,0);
                 AID userId = msg.getSender();
                 switch (msg.getPerformative()){
+                    /** Mensagens de tracking da posição dos Utilizadores **/
                     case ACLMessage.CFP:
                     case ACLMessage.INFORM:
                             try {
@@ -78,7 +84,7 @@ public class AgenteMonitor extends Agent {
                             boolean sendSignal;
 
                             String s = isCalling? "callingForProposal": "SignalInOutAPE";
-
+                            /** Atualizar as estações cuja APE inclui o Utilizador **/
                             for(Map.Entry<AID,APE> e : estacoes.entrySet() ){
                                 boolean isIn = e.getValue().isInside(p);
                                 boolean wasIn =e.getValue().isInside(last);
@@ -118,6 +124,7 @@ public class AgenteMonitor extends Agent {
                             msg.setPerformative(ACLMessage.INFORM);
 
                             switch (ss){
+                                /** Requisita as posições das estações **/
                                 case "Stations":
                                         HashMap<AID,Posicao> sendThis= new HashMap<>();
                                         estacoes.forEach((aid,ape) -> {
@@ -128,11 +135,13 @@ public class AgenteMonitor extends Agent {
                                             msg.setContentObject(sendThis);
                                         }catch (Exception e){e.printStackTrace();}
                                         break;
+                                /** Requisita as posições dos Utilizadores **/
                                 case "Stats":
                                         try {
                                             msg.setContentObject( new Object[]{"Users",userHistory});
                                         }catch (Exception e){e.printStackTrace();}
                                     break;
+                                /** Requisita estação para um Utilizador em emergência **/
                                 case "UserLost":
                                     Object[] cont2 = new Object[]{"UserLost", usr};
                                     Posicao usrPos  = (Posicao) cont[1];
@@ -163,6 +172,7 @@ public class AgenteMonitor extends Agent {
                         s = (String) cont[0];
 
                         msg = new ACLMessage(ACLMessage.CONFIRM);
+                        /** Utilizador avisa que encontrou estação **/
                         if(s.equals("haveStation")) {
                             for (AID id : estacoes.keySet()) {
                                 try {
@@ -174,6 +184,7 @@ public class AgenteMonitor extends Agent {
                             }
                             msg.removeReceiver((AID) cont[1]);
                             send(msg);
+                            /** Utilizador depositou a sua bicicleta **/
                         } else {
                             userHistory.remove(cont[1]);
                             userCalling.remove(cont[1]);

@@ -3,7 +3,7 @@ package Util;
 import jade.core.AID;
 
 import java.util.*;
-
+/** Mapa de posiçoes dos agentes **/
 public class Mapa {
     private int size;
     private Map<AID,Posicao> users;
@@ -31,7 +31,7 @@ public class Mapa {
                 ", stations=" + stas +
                 '}';
     }
-
+    /** Quantidade de Utilizadores ativos **/
     public int getNumUsers() {
         return users.size();
     }
@@ -39,10 +39,7 @@ public class Mapa {
     public void setUsers(Map<AID, Posicao> users) {
         this.users = users;
     }
-    public void updateUser(AID usr, Posicao pos){
-        if(this.users.containsKey(usr)) this.users.replace(usr, pos);
-            else this.users.put(usr, pos);
-    }
+
     public void setStations(Map<AID, Posicao> stations) {
         this.stations = stations;
     }

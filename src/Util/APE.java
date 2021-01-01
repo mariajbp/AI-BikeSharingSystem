@@ -1,12 +1,6 @@
 package Util;
 
-import jade.core.AID;
-
-import javax.swing.text.Position;
 import java.io.Serializable;
-import java.rmi.server.UID;
-import java.util.List;
-import java.util.Set;
 
 public class APE implements Serializable {
     int raio;
@@ -19,10 +13,6 @@ public class APE implements Serializable {
     }
 
 
-    public int getRaio() {return raio;}
-
-    public void setRaio(int raio) {this.raio = raio;}
-
     @Override
     public String toString() {
         return "APE{" +
@@ -32,8 +22,7 @@ public class APE implements Serializable {
     }
 
     public boolean isInside(Posicao p){
-
-        return (pos.euclideanDistance(p)<raio);
+        return (pos.euclideanDistance(p) < raio);
     }
 
 

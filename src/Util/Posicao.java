@@ -1,8 +1,7 @@
 package Util;
 
 import java.io.Serializable;
-import java.util.Objects;
-
+/** Estrutura representativa de uma posição no mapa **/
 public class Posicao implements Serializable {
 
    public float posX;
@@ -13,11 +12,6 @@ public class Posicao implements Serializable {
         posY = y;
     }
 
-    public static int euclideanDistance(Posicao p1, Posicao p2){
-        double dist = Math.sqrt(((Math.pow((p1.posX - p2.posX), 2)) + (Math.pow((p1.posY - p2.posY ), 2))));
-        return (int) dist ;
-    }
-
     @Override
     public String toString() {
         return "Posicao{" +
@@ -25,7 +19,7 @@ public class Posicao implements Serializable {
                 ", posY=" + posY +
                 '}';
     }
-
+    /** Calculo da distancia euclidiana desta posição a uma outra **/
     public double euclideanDistance(Posicao p2){
         double dist = Math.sqrt(((Math.pow((posX - p2.posX), 2)) + (Math.pow((posY - p2.posY ), 2))));
         return  dist ;
@@ -38,7 +32,7 @@ public class Posicao implements Serializable {
         return Float.compare(posicao.posX, posX) == 0 &&
                 Float.compare(posicao.posY, posY) == 0;
     }
-
+    /** Caclulo da proxima posição após dar um passo em direção a um destino **/
     public Posicao nextStep(Posicao to){
        if(this.equals(to)) {return to;}
        double dist = euclideanDistance(to);

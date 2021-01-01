@@ -77,6 +77,7 @@ public class MainContainer {
                     args_input[0].toString());
             List<AgentController> all= new ArrayList<>();
             List<Posicao> stations = new ArrayList<>();
+            /** Criar Estações primeiro **/
             for(int i = 0; i< ConfigVars.STATION_NUM; i++){
                 Random r =new Random();
                 Posicao ps =  new Posicao(r.nextInt(ConfigVars.MAP_SIZE),r.nextInt(ConfigVars.MAP_SIZE));
@@ -97,9 +98,8 @@ public class MainContainer {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
             }
-
+            /** Criar o Monitor **/
             AgentController mon1 = newcontainer1.createNewAgent("Mon1", "Agents.AgenteMonitor", new Object[] {});
-            AgentController inter1 = newcontainer1.createNewAgent("Inter1", "Agents.AgenteInterface", new Object[] {});
 
             mon1.start();
 
@@ -109,7 +109,7 @@ public class MainContainer {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
             }
-
+            /** Criar os Utilizadores iniciais **/
             all= new ArrayList<>();
             for(int i=0;i<ConfigVars.INIT_USERS;i++){
                 Random r =new Random();
@@ -127,7 +127,8 @@ public class MainContainer {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
             }
-
+            /** Criar a Interface **/
+            AgentController inter1 = newcontainer1.createNewAgent("Inter1", "Agents.AgenteInterface", new Object[] {});
             inter1.start();
 
 

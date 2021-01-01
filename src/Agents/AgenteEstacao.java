@@ -20,18 +20,21 @@ import java.util.*;
 import java.util.concurrent.SynchronousQueue;
 
 public class AgenteEstacao extends Agent {
+    /** Preço base da Estação**/
     private int pBase;
     private APE ape;
     private AID monitor;
     private Posicao pos;
     private int capAtual;
     private int capLim;
+    /** Contador de Utilizadores criados **/
     private int createdUsers;
-    // users na APE
+    /** Utilizadores na APE **/
     private Map<AID,Boolean> users = new HashMap<>();
-    //users em espera pra deixar a bike
+    /** Utilizadores em espera pra deixar a bicicleta **/
     private Queue<AID> usersWaiting = new LinkedList<>();
-    // 0 : Desconto , 1 : Normal, 2 : Expensive
+    /** Histórico de transações
+     * 0 : Desconto , 1 : Normal, 2 : Inflacionado **/
     private Integer[] dealHistory= new Integer[]{0,0,0};
 
 
@@ -44,8 +47,7 @@ public class AgenteEstacao extends Agent {
         capAtual =(int) (2*(float)capLim/3.f);
         createdUsers = 0;
         monitor = null;
-
-        //System.out.println(getAID().getLocalName()+": "+ pos);
+        /** Registar Estação no DF **/
         DFAgentDescription dfd = new DFAgentDescription();
         dfd.setName(getAID());
         ServiceDescription sd = new ServiceDescription();
@@ -57,12 +59,13 @@ public class AgenteEstacao extends Agent {
         } catch (FIPAException fe) {
             fe.printStackTrace();
         }
+
         addBehaviour(new RecieveStation());
         addBehaviour(new PursuitUsers(this));
         addBehaviour(new CreateUsers(this));
     }
-
-    public int calcProposal(AID user){
+    /** Calculo do preço para depositar a bicicleta **/
+    public int calcProposal(){
         double currentOccup= ((double)capAtual)/((double)capLim);
         if(currentOccup>0.8){
             return (int) (pBase*1.8);}
@@ -71,14 +74,14 @@ public class AgenteEstacao extends Agent {
                 else return pBase;
     }
 
-
+    /** Behavior base para receber mensagens **/
     public class RecieveStation extends CyclicBehaviour {
-
         @Override
         public void action() {
             ACLMessage msg = receive();
             if(msg!=null){
                 switch (msg.getPerformative()){
+                    /** Informar o Monitor da APE e posição desta estação **/
                     case ACLMessage.SUBSCRIBE:{
                         msg =msg.createReply();
                         msg.setPerformative(ACLMessage.INFORM);
@@ -95,12 +98,14 @@ public class AgenteEstacao extends Agent {
                         } catch (UnreadableException e) {e.printStackTrace();}
                         String subject = (String) msgCont[0];
                         switch (subject){
+                            /** Assinalar entrada ou saida na APE de um Utilizador **/
                             case "SignalInOutAPE":
                                 AID userSignal =(AID) msgCont[1];
                                 if(users.containsKey(userSignal)){
                                     users.remove(userSignal);
                                 }else {users.put(userSignal,false);}
                                 break;
+                            /** Assinalar entrada ou saida na APE de um Utilizador disposto a receber proposals **/
                             case "callingForProposal":
                                 AID user =(AID) msgCont[1];
 
@@ -111,6 +116,7 @@ public class AgenteEstacao extends Agent {
                                         users.replace(user,true);
                                 }else {users.put(user,true);}
                                 break;
+                            /** Pedido do Utilizador para entregar a bicicleta **/
                             case "depositBike":
                                 AID usr = msg.getSender();
                                 ACLMessage msg2;
@@ -159,13 +165,12 @@ public class AgenteEstacao extends Agent {
                         }
                     break;
                     }
-
+                    /** Utilizador aceita a proposta da estação **/
                     case ACLMessage.ACCEPT_PROPOSAL:{
                         AID usr = msg.getSender();
                         users.put(usr, false);
                         try {
-                            //System.out.println((int)((Object[]) msg.getContentObject())[0] );
-                            switch ((int)((Object[]) msg.getContentObject())[0] ){
+                           switch ((int)((Object[]) msg.getContentObject())[0] ){
                                 case 20 :
                                     dealHistory[0]++;
                                     break;
@@ -181,8 +186,8 @@ public class AgenteEstacao extends Agent {
                         }
                         break;
                     }
+                    /** Utilizador rejeita a proposta **/
                     case ACLMessage.REJECT_PROPOSAL:{
-
                         break;
                     }
                     case ACLMessage.REQUEST:{
@@ -194,6 +199,7 @@ public class AgenteEstacao extends Agent {
                         }
                         String sss= (String) cont[0];
                         switch (sss){
+                            /** Requisita estatisticas da Estação **/
                             case "Stats":
                                 msg = msg.createReply();
                                 msg.setPerformative(ACLMessage.INFORM);
@@ -209,10 +215,11 @@ public class AgenteEstacao extends Agent {
                                 }
                                 send(msg);
                                 break;
+                            /** Requisita entrega da bicicleta de um Utilizador em emergência **/
                             case "UserLost":
                                 AID usr =(AID) cont[1];
-                                System.out.println("USERLOST: "+ usr +" STATION");
-                                int i = calcProposal(usr);
+                                System.out.println("USERLOST: "+ usr.getLocalName() +" REDIRECTED TO STATION :"+getAID().getLocalName() );
+                                int i = calcProposal();
 
                                 msg = new ACLMessage(ACLMessage.PROPOSE);
 
@@ -230,6 +237,7 @@ public class AgenteEstacao extends Agent {
                         }
                         break;
                     }
+                    /** Utilizador já não está disposto a aceitar propostas **/
                     case ACLMessage.CONFIRM:
                         AID id = new AID();
                         try {
@@ -245,7 +253,7 @@ public class AgenteEstacao extends Agent {
 
         }
     }
-
+    /** Criar utilizadores  **/
     public class CreateUsers extends TickerBehaviour {
         public CreateUsers(Agent a) {
             super(a,  (long)(((float)3000) * ConfigVars.SPEED)  );
@@ -253,21 +261,16 @@ public class AgenteEstacao extends Agent {
 
         @Override
         protected void onTick() {
-
             //Random
             Double[] ratio = new Double[3];
             for(int i=0; i<3;i++)
                 ratio[i]= dealHistory[i]/(double) Arrays.stream(dealHistory).reduce(0,(acc,x)-> acc+=x);
 
-
-
             Random r = new Random();
-
-               int y =r.nextInt(11-(int)(10*ratio[0])+(int)(10*ratio[2]) );
+            int y =r.nextInt(11-(int)(10*ratio[0])+(int)(10*ratio[2]) );
                if(y>8) y=2;
                else if(y>6) y=1;
                         else y=0;
-
             //Create users
             for(int i = 0; i < y; i++) {
                 if(capAtual > 0) {
@@ -287,14 +290,11 @@ public class AgenteEstacao extends Agent {
         }
     }
 
-
+    /** Envia propostas aos utilizadores na APE da estação **/
     public class PursuitUsers extends TickerBehaviour {
-
-
         public PursuitUsers(Agent a) {
             super(a,  (long)(((float)1000) * ConfigVars.SPEED)  );
         }
-
         @Override
         protected void onTick() {
             int x = capLim - capAtual;
@@ -312,7 +312,7 @@ public class AgenteEstacao extends Agent {
                 ACLMessage msg = new ACLMessage(ACLMessage.PROPOSE);
                 users.forEach((usr, isRdy) -> {
                     if (isRdy) {
-                        int i = calcProposal(usr);
+                        int i = calcProposal();
                         Object[] cont = new Object[]{
                                 "proposeDelivery",
                                 pos,
@@ -320,9 +320,7 @@ public class AgenteEstacao extends Agent {
                         };
                         try {
                             msg.setContentObject(cont);
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
+                        } catch (IOException e) {e.printStackTrace();}
                         msg.addReceiver(usr);
 
                     }

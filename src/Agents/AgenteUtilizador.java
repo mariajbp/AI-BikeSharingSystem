@@ -22,12 +22,15 @@ public class AgenteUtilizador extends Agent {
     private Posicao posInicial;
     private Posicao posAtual;
     private Posicao dest;
+    /** Distancia inicial para o destino **/
     private double dist2dest;
     private AID monitor;
     private AID deliveryStation;
+    /** Flag que indica que o utilizador chegou ao seu destino **/
     private boolean stay;
+    /** Flag que indica que o utilizador encontrou estação **/
     private boolean arriving;
-    private Personalidade persona = new Personalidade();
+    private Personalidade persona;
 
     public void setup(){
         Object[] args = getArguments();
@@ -37,7 +40,8 @@ public class AgenteUtilizador extends Agent {
         deliveryStation = null;
         stay = false;
         arriving = false;
-
+        persona = new Personalidade();
+        /** Registar o Utilizador no DF **/
         DFAgentDescription dfd = new DFAgentDescription();
         dfd.setName(getAID());
         ServiceDescription sd = new ServiceDescription();
@@ -49,7 +53,7 @@ public class AgenteUtilizador extends Agent {
         } catch (FIPAException fe) {
             fe.printStackTrace();
         }
-
+        /**Procurar o Monitor**/
         dfd= new DFAgentDescription();
         sd = new ServiceDescription();
         sd.setType("monitor");
@@ -60,12 +64,11 @@ public class AgenteUtilizador extends Agent {
             e.printStackTrace();
         }
 
-
         addBehaviour(new UserTicker(this));
         addBehaviour(new UserReceiver(this));
     }
 
-
+    /**Behavior base que define cada passo do Utilizador**/
     public class UserTicker extends TickerBehaviour {
         public UserTicker(Agent a) {
             super(a, (long)(((float)1000) * ConfigVars.SPEED));
@@ -74,10 +77,8 @@ public class AgenteUtilizador extends Agent {
         @Override
         protected void onTick() {
             Posicao pa = posAtual;
-            //System.out.println(getAID().getLocalName()+" : "+posAtual);
-            if(!stay && (posAtual = posAtual.nextStep(dest)).equals(pa)){
+             if(!stay && (posAtual = posAtual.nextStep(dest)).equals(pa)){
                 if(deliveryStation!=null) {
-                    //System.out.println(getAID().getLocalName() + ": FinalDest");
                     stay = true;
                     addBehaviour(new OneShotDeliver());
                 }
@@ -86,9 +87,7 @@ public class AgenteUtilizador extends Agent {
                     Object[] cont = new Object[]{"UserLost", posAtual};
                     try {
                         msg.setContentObject(cont);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
+                    } catch (IOException e) {e.printStackTrace();}
                     msg.addReceiver(monitor);
                     send(msg);
                 }
@@ -103,16 +102,14 @@ public class AgenteUtilizador extends Agent {
                 msg.addReceiver(monitor);
                 try {
                     msg.setContentObject(posAtual);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+                } catch (IOException e) {e.printStackTrace();}
                 send(msg);
             }
         }
     }
 
 
-
+    /**Behavior base para receber mensagens**/
     public class UserReceiver extends CyclicBehaviour {
         public UserReceiver(Agent a) {
             super(a);
@@ -123,34 +120,7 @@ public class AgenteUtilizador extends Agent {
             ACLMessage msg = receive();
             if (msg != null) {
                 switch (msg.getPerformative()) {
-                    case ACLMessage.REQUEST:{
-                        Object[] cont = null;
-                        try {
-                            cont = (Object[]) msg.getContentObject();
-                        } catch (UnreadableException e) {
-                            e.printStackTrace();
-                        }
-
-                        String sss= null;
-                        try {
-                            sss = (String) ((Object[])msg.getContentObject())[0];
-                        } catch (UnreadableException e) {e.printStackTrace();}
-
-                        switch (sss) {
-                            case "Stats":{
-                                msg = msg.createReply();
-                                msg.setPerformative(ACLMessage.INFORM);
-                                Object[] sendObj = new Object[]{
-                                        "User",
-                                        posAtual};
-                                try {
-                                    msg.setContentObject(sendObj);
-                                } catch (IOException e) {e.printStackTrace();}
-                                send(msg);
-                                break;}
-                        }
-                        break;
-                    }
+                    /** Receber propostas das estações **/
                     case ACLMessage.PROPOSE:
                         Object[] cont = new Object[0];
                         try {
@@ -163,6 +133,7 @@ public class AgenteUtilizador extends Agent {
                         msg = msg.createReply();
 
                         switch (s) {
+                            /** Receber propostas das estações em situaçao normal **/
                             case "proposeDelivery":
                                 if (!posInicial.equals(cont[1]) && persona.ponder(posAtual.euclideanDistance((Posicao) cont[1]), (int) cont[2])) {
                                     ACLMessage msg2 = new ACLMessage(ACLMessage.CONFIRM);
@@ -182,7 +153,7 @@ public class AgenteUtilizador extends Agent {
                                     msg.setPerformative(ACLMessage.REJECT_PROPOSAL);
                                 send(msg);
                                 break;
-
+                            /** Receber propostas das estações quando em estado de emergência**/
                             case "backupStation":
                                 ACLMessage msg2 = new ACLMessage(ACLMessage.CONFIRM);
                                 msg.setPerformative(ACLMessage.ACCEPT_PROPOSAL);
@@ -209,7 +180,7 @@ public class AgenteUtilizador extends Agent {
 
         }
     }
-
+    /** Behavior para depositar a bicicleta **/
     private class OneShotDeliver extends OneShotBehaviour {
         @Override
         public void action() {
@@ -234,8 +205,6 @@ public class AgenteUtilizador extends Agent {
             if(s.equals("wait")){
                 blockingReceive();
             }
-            // aqui recebe da estação o informa a dizer podes vir
-            System.out.println(getAID().getLocalName()+": RIP");
 
             doDelete();
 

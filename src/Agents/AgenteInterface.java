@@ -19,37 +19,35 @@ import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.plot.CategoryPlot;
 import org.jfree.chart.plot.PlotOrientation;
-import org.jfree.chart.plot.XYPlot;
 import org.jfree.data.category.DefaultCategoryDataset;
-import org.jfree.data.xy.DefaultXYDataset;
-import org.jfree.data.xy.XYDataset;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
-
-import java.awt.*;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
 public class AgenteInterface extends Agent {
     private Mapa mapa;
     private AID monitor;
+    /** Estatisticas das Estações **/
     private HashMap<AID,Integer> stationOccupation = new HashMap<>();
     private HashMap<AID, Integer[]> stationPricing = new HashMap<>();
+    /** Janela de apresentação de gráficos **/
     private ChartWindow chartWindow;
+    /** Contador de ticks passados **/
     private int tickNo;
+    /** Datasets com as estatisticas **/
     private DefaultCategoryDataset datasetOccup;
     private DefaultCategoryDataset datasetPricing;
-    private XYSeries xySeries;
+    private XYSeries numUsers;
 
 
     @Override
     protected void setup() {
         super.setup();
         tickNo=0;
-        mapa = new Mapa(100);
-
+        mapa = new Mapa(ConfigVars.getMapSize());
+        /** Procurar o Monitor **/
         DFAgentDescription df = new DFAgentDescription();
         ServiceDescription s = new ServiceDescription();
         s.setType("monitor");
@@ -58,7 +56,7 @@ public class AgenteInterface extends Agent {
              monitor = DFService.search(this, df)[0].getName();
         }catch (Exception e){e.printStackTrace();}
 
-        ////Stations
+        /** Procurar as Estações **/
         ACLMessage getStas = new ACLMessage(ACLMessage.REQUEST);
         getStas.addReceiver(monitor);
         try {
@@ -66,20 +64,15 @@ public class AgenteInterface extends Agent {
         } catch (Exception e) {e.printStackTrace();}
         send(getStas);
 
-
         ACLMessage recStas = receive();
         while((recStas=receive())==null){}
         try {mapa.setStations((Map<AID, Posicao>) recStas.getContentObject());} catch (UnreadableException e){e.printStackTrace();}
-
-
-
-
 
         addBehaviour(new InterfaceBehavior(this));
         addBehaviour(new InterfRecBehavior());
     }
 
-
+    /** Behavior base da Interface **/
     public class InterfaceBehavior extends TickerBehaviour {
 
         public InterfaceBehavior(Agent a) {
@@ -95,28 +88,23 @@ public class AgenteInterface extends Agent {
             } catch (IOException e) {
                 e.printStackTrace();
             }
-            for(AID st : mapa.getStationSet()){reqAllStats.addReceiver(st);}
+            for(AID st : mapa.getStationSet())
+                reqAllStats.addReceiver(st);
             ////Users
             reqAllStats.addReceiver(monitor);
             send(reqAllStats);
 
-            drawChartOccup();
-
-
+            drawCharts();
         }
-
-
-
     }
-
-    private void drawChartOccup() {
-
+    /** Prepara os Datasets e apresenta os gráficos**/
+    private void drawCharts() {
        if(datasetOccup == null){ datasetOccup =new DefaultCategoryDataset( );}
        if(datasetPricing == null){ datasetPricing =new DefaultCategoryDataset( );}
         XYSeriesCollection datasetNumUsers= null;
-       if(xySeries == null){ datasetNumUsers =new XYSeriesCollection(); datasetNumUsers.addSeries(xySeries = new XYSeries("Numero de Utilizadores"));}
+       if(numUsers == null){ datasetNumUsers =new XYSeriesCollection(); datasetNumUsers.addSeries(numUsers = new XYSeries("Numero de Utilizadores"));}
 
-       xySeries.add( tickNo,mapa.getNumUsers());
+       numUsers.add( tickNo,mapa.getNumUsers());
        stationOccupation.forEach((sta, occ)->{
             datasetOccup.setValue( occ , sta.getLocalName(),"Taxa de Ocupação" );
         });
@@ -126,9 +114,8 @@ public class AgenteInterface extends Agent {
            datasetPricing.setValue( pArray[2] ,"Inflacionado", sta.getLocalName() );
         });
 
-
        if(chartWindow == null){
-/////////// STATION OCCUPATION
+        // STATION OCCUPATION
         JFreeChart barChart = ChartFactory.createBarChart(
                 "Taxa de ocupação das estaçoes",
                 " ",
@@ -139,7 +126,7 @@ public class AgenteInterface extends Agent {
         CategoryPlot plot = (CategoryPlot) barChart.getPlot();
         NumberAxis rangeAxis = (NumberAxis) plot.getRangeAxis();
         rangeAxis.setRange(0, 100);
-////////////// NUM USERS
+        // NUM USERS
         JFreeChart userChart = ChartFactory.createXYLineChart(
                 "Numero de Utilizadores no Sistema",
                 "Tick",
@@ -147,12 +134,7 @@ public class AgenteInterface extends Agent {
                     datasetNumUsers,
                     PlotOrientation.VERTICAL,
                     false,true,false);
- /*           XYPlot plot2 = (XYPlot) userChart.getPlot();
-            NumberAxis rangeAxis2 = (NumberAxis) plot2.getRangeAxis();
-            rangeAxis2.setLowerBound(0);
-
-  */
-///////////// PRICING
+        // PRICING
            JFreeChart priceChart = ChartFactory.createBarChart(
                    "Distribuição de preços por estação",
                    "Categoria",
@@ -163,8 +145,6 @@ public class AgenteInterface extends Agent {
            CategoryPlot plot3 = (CategoryPlot) priceChart.getPlot();
            NumberAxis rangeAxis3 = (NumberAxis) plot3.getRangeAxis();
 
-          // rangeAxis3.setLowerBound(0);
-
        chartWindow = new ChartWindow(new String[]{"Taxa de ocupação das estaçoes",
                                                 "Numero de Utilizadores no Sistema",
                                                 "Distribuição de preços por estação"},
@@ -174,10 +154,8 @@ public class AgenteInterface extends Agent {
        chartWindow.plot();
         }
     }
-
+    /** Behavior base para receber as estatisticas **/
     private class InterfRecBehavior extends CyclicBehaviour {
-
-
         @Override
         public void action() {
             ACLMessage msg = receive();
